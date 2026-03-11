@@ -110,14 +110,12 @@ For neighbor queries ("which particles are adjacent to particle at row 5, col 10
 | Shape drawing | Rasterized (like pixels) | Smooth curves |
 | Complexity | Low | High |
 
-**Recommendation:** Use a **grid-based system as the primary interface** for the LLM, with an optional continuous sub-pixel offset for fine-tuning. The LLM thinks in grid coordinates; the renderer can apply sub-pixel offsets for smoother visuals.
+**Decision:** Use a **pure grid-based system** with integer `[row, col]` coordinates. No continuous coordinates, no sub-pixel offsets. The LLM thinks in grid coordinates, and the renderer maps them directly to pixel positions. This eliminates complexity and keeps the system fully deterministic -- every particle is at an exact grid intersection.
 
 ```typescript
 interface ParticlePosition {
   row: number;        // grid coordinate (integer)
   col: number;        // grid coordinate (integer)
-  offsetX?: number;   // sub-pixel offset [-0.5, 0.5]
-  offsetY?: number;   // sub-pixel offset [-0.5, 0.5]
 }
 ```
 
@@ -295,28 +293,31 @@ interface Connection {
 }
 ```
 
-### 3.3 Describing Complex Shapes
+### 3.3 Creating Visuals from Raw Particles and Connections
 
-Complex shapes are described as **groups of particles and connections**:
+All visuals are created by the LLM directly using raw particles and connections. There are no shape primitives -- the LLM has full control over which particles to activate and how to connect them. This avoids the problem of pre-built shapes being positioned where the LLM cannot predict.
 
+For example, to create a triangle, the LLM would:
+
+1. Use `set_particles` to activate the three vertices:
 ```json
-{
-  "shapes": [
-    {
-      "name": "triangle",
-      "group": "shape_1",
-      "particles": [[10,10], [10,15], [15,12]],
-      "connections": [
-        { "from": [10,10], "to": [10,15] },
-        { "from": [10,15], "to": [15,12] },
-        { "from": [15,12], "to": [10,10] }
-      ]
-    }
-  ]
-}
+{ "particles": [
+    { "r": 10, "c": 10, "color": "#FF0000" },
+    { "r": 10, "c": 15, "color": "#FF0000" },
+    { "r": 15, "c": 12, "color": "#FF0000" }
+]}
 ```
 
-The system should provide **shape primitives** that the LLM can invoke as high-level operations (draw_circle, draw_rectangle, draw_line, draw_polygon) which internally activate the appropriate particles and connections.
+2. Use `connect` to draw the edges:
+```json
+{ "connections": [
+    { "from": [10, 10], "to": [10, 15], "color": "#FFFFFF", "width": 1 },
+    { "from": [10, 15], "to": [15, 12], "color": "#FFFFFF", "width": 1 },
+    { "from": [15, 12], "to": [10, 10], "color": "#FFFFFF", "width": 1 }
+]}
+```
+
+This approach gives the LLM full spatial awareness -- it knows exactly where every particle is because it placed each one explicitly.
 
 ---
 
@@ -428,8 +429,9 @@ The LLM defines **key states** and the system automatically interpolates between
 
 ### 4.2 Interpolation System
 
+> **Note:** The interpolation system is undergoing deep research and will be documented separately.
+
 Properties that can be interpolated:
-- **Position offset** (linear or bezier)
 - **Color** (RGB/HSL interpolation)
 - **Opacity** (linear)
 - **Size** (linear)
@@ -539,18 +541,6 @@ tools.define("disconnect", {
     ids: { type: "array", optional: true },
     endpoints: { type: "array", optional: true },
     group: { type: "string", optional: true }
-  }
-});
-
-// === Shape Primitives ===
-tools.define("draw_shape", {
-  description: "Draw a predefined shape (circle, rectangle, line, polygon, text)",
-  parameters: {
-    type: "string",  // "circle" | "rectangle" | "line" | "polygon" | "text"
-    params: "object", // shape-specific parameters
-    color: "string",
-    group: "string",
-    fill: "boolean"
   }
 });
 
@@ -888,7 +878,6 @@ packages/
   provider-gemini/-- Gemini provider adapter (depends on tools)
   provider-anthropic/ -- Anthropic adapter (depends on tools)
   provider-openai/    -- OpenAI adapter (depends on tools)
-  shapes/         -- Shape primitives (circle, rect, polygon) (depends on core)
   server/         -- HTTP server for API access
   client/         -- Browser-based preview UI
 ```

@@ -45,16 +45,16 @@ The particle engine is a **bounded 2D grid of addressable particles** that an LL
 |                      |                                            |
 |              +-------v--------+                                   |
 |              |      core      |  <-- Grid, particles, connections |
-|              +---+----+---+---+                                   |
-|                  |    |   |                                       |
-|          +-------+    |   +--------+                              |
-|          |            |            |                               |
-|  +-------v---+  +----v-----+  +---v-------+                      |
-|  |  shapes   |  | animation|  |  state    |                      |
-|  | primitives|  | keyframes|  | snapshots |                      |
-|  +-----------+  | interp.  |  | undo/redo |                      |
-|                 | easing   |  +-----------+                      |
-|                 +----+-----+                                     |
+|              +---+--------+---+                                   |
+|                  |        |                                       |
+|          +-------+        +--------+                              |
+|          |                         |                               |
+|  +-------v-----+           +------v------+                       |
+|  |  animation  |           |    state    |                       |
+|  |  keyframes  |           |  snapshots  |                       |
+|  |  interp.    |           |  undo/redo  |                       |
+|  |  easing     |           +-------------+                       |
+|  +------+------+                                                 |
 |                      |                                            |
 +------------------------------------------------------------------+
                        |
@@ -163,7 +163,7 @@ interface SpaceState {
 
 **Responsibilities:**
 - Keyframe timeline management
-- Property interpolation (color, opacity, size, position offset)
+- Property interpolation (color, opacity, size)
 - Easing function library
 - Discrete event scheduling (particle add/remove, connection add/remove)
 - Frame generation from keyframe sequences
@@ -212,6 +212,8 @@ class FrameGenerator {
 - Alpha modified by easing function before application
 - Color interpolated in HSL space for perceptually smooth transitions
 - Discrete properties (active, group, style) applied at exact event time
+
+> **Note:** The interpolation system is undergoing deep research and will be documented separately.
 
 **Supported easing functions:**
 - Linear, Quad (In/Out/InOut), Cubic, Quart, Quint
@@ -314,11 +316,11 @@ class VideoGenerator {
 
 ### `packages/tools` -- LLM Tool Definitions & Executor
 
-**Dependencies:** `core`, `animation`, `shapes`
+**Dependencies:** `core`, `animation`
 
 This is the **LLM-facing API layer**. It defines the tools the LLM can call and executes them against the particle store.
 
-**Tool count:** 14 tools (well under the recommended ~20 limit)
+**Tool count:** 13 tools (well under the recommended ~20 limit)
 
 | # | Tool | Purpose |
 |---|------|---------|
@@ -328,14 +330,13 @@ This is the **LLM-facing API layer**. It defines the tools the LLM can call and 
 | 4 | `clear_particles` | Deactivate particles (by coords, group, or all) |
 | 5 | `connect` | Create line connections between particles |
 | 6 | `disconnect` | Remove connections |
-| 7 | `draw_shape` | Draw a shape primitive (circle, rect, line, polygon, text, arc) |
-| 8 | `create_animation` | Define an animation with keyframes |
-| 9 | `modify_animation` | Add/modify keyframes in an existing animation |
-| 10 | `render_image` | Render current state to PNG/SVG |
-| 11 | `render_video` | Render animation to MP4/WebM/GIF |
-| 12 | `snapshot` | Save named state snapshot |
-| 13 | `restore` | Restore named state snapshot |
-| 14 | `undo` | Undo last operation |
+| 7 | `create_animation` | Define an animation with keyframes |
+| 8 | `modify_animation` | Add/modify keyframes in an existing animation |
+| 9 | `render_image` | Render current state to PNG/SVG |
+| 10 | `render_video` | Render animation to MP4/WebM/GIF |
+| 11 | `snapshot` | Save named state snapshot |
+| 12 | `restore` | Restore named state snapshot |
+| 13 | `undo` | Undo last operation |
 
 **Tool definition format** (provider-agnostic JSON Schema):
 
@@ -395,42 +396,6 @@ class ToolExecutor {
   }
 }
 ```
-
----
-
-### `packages/shapes` -- Shape Primitives
-
-**Dependencies:** `core`
-
-High-level shape drawing functions that compute which particles to activate and which connections to create.
-
-```typescript
-interface ShapeLibrary {
-  // Returns particle coordinates and connections for each shape
-  line(from: [number, number], to: [number, number]): ShapeResult;
-  rectangle(topLeft: [number, number], width: number, height: number, fill?: boolean): ShapeResult;
-  circle(center: [number, number], radius: number, fill?: boolean): ShapeResult;
-  polygon(vertices: [number, number][]): ShapeResult;
-  arc(center: [number, number], radius: number, startAngle: number, endAngle: number): ShapeResult;
-  text(position: [number, number], text: string, fontSize: number): ShapeResult;
-
-  // Bresenham's line algorithm adapted for grid
-  // Midpoint circle algorithm adapted for grid
-  // Scanline fill for filled shapes
-}
-
-interface ShapeResult {
-  particles: [number, number][];     // coordinates to activate
-  connections: [from: [number, number], to: [number, number]][];
-  group: string;                     // auto-generated group name
-}
-```
-
-**Implementation uses classical rasterization algorithms:**
-- **Bresenham's line** for drawing lines between two grid points
-- **Midpoint circle algorithm** for circles
-- **Scanline fill** for filled shapes
-- **Bitmap font rendering** for text (pre-computed glyph tables at grid resolution)
 
 ---
 
@@ -513,26 +478,36 @@ A minimal browser application that:
                 |
 2. Server forwards to LLM (Gemini 3.1 Pro) with tool definitions
                 |
-3. LLM calls: draw_shape({ type: "polygon", vertices: [[20,50],[50,20],[50,80]] })
-                |
-4. ToolExecutor computes shape -> activates particles, creates connections
-                |
-5. LLM calls: create_animation({ duration: 3000, keyframes: [
-     { time: 0, state: { /* triangle at 0 degrees */ } },
-     { time: 3000, state: { /* triangle at 360 degrees */ } }
+3. LLM calls: set_particles({ particles: [
+     { row: 20, col: 50, color: "#FF0000" },
+     { row: 50, col: 20, color: "#FF0000" },
+     { row: 50, col: 80, color: "#FF0000" }
    ]})
                 |
-6. ToolExecutor stores animation definition
+4. LLM calls: connect({ connections: [
+     { from: [20,50], to: [50,20], color: "#FFFFFF", width: 1 },
+     { from: [50,20], to: [50,80], color: "#FFFFFF", width: 1 },
+     { from: [50,80], to: [20,50], color: "#FFFFFF", width: 1 }
+   ]})
                 |
-7. LLM calls: render_video({ format: "mp4", animation_id: "anim_1" })
+5. ToolExecutor activates particles and creates connections
                 |
-8. FrameGenerator interpolates 90 frames (30fps x 3s)
+6. LLM calls: create_animation({ duration: 3000, keyframes: [
+     { time: 0, state: { /* triangle at position A */ } },
+     { time: 3000, state: { /* triangle at position B (rotated) */ } }
+   ]})
                 |
-9. CanvasRenderer renders each frame to pixel buffer
+7. ToolExecutor stores animation definition
                 |
-10. FFmpeg encodes frames to MP4
+8. LLM calls: render_video({ format: "mp4", animation_id: "anim_1" })
                 |
-11. Video file returned to user
+9. FrameGenerator interpolates 90 frames (30fps x 3s)
+                |
+10. CanvasRenderer renders each frame to pixel buffer
+                |
+11. FFmpeg encodes frames to MP4
+                |
+12. Video file returned to user
 ```
 
 ---
@@ -624,18 +599,20 @@ with {rows} rows and {cols} columns of evenly-spaced dots.
 You can:
 - Activate particles at specific grid coordinates (row, col)
 - Connect particles with lines
-- Draw shapes (circles, rectangles, lines, polygons)
 - Create animations with keyframes
 - Render images and videos
 
-The grid uses 0-indexed coordinates. Row 0 is the top, row {rows-1} is the bottom.
+The grid uses 0-indexed integer coordinates. Row 0 is the top, row {rows-1} is the bottom.
 Column 0 is the left, column {cols-1} is the right.
 
 Current state: {active_count} active particles, {connection_count} connections.
 
-When creating visuals, think about which particles to activate and how to connect
-them to form the desired shapes and patterns. For animations, define keyframes at
-key moments and the system will smoothly interpolate between them.
+To create any visual (shapes, diagrams, text, illustrations), you place individual
+particles at exact grid positions using set_particles, then connect them with lines
+using connect. You have full control over every particle and every connection -- there
+are no pre-built shape primitives. This means you always know exactly where every
+element is positioned. For animations, define keyframes at key moments and the system
+will smoothly interpolate between them.
 ```
 
 ---
@@ -665,7 +642,6 @@ key moments and the system will smoothly interpolate between them.
 
 ### Phase 1: Core Engine
 - `packages/core` -- Grid, particles, connections, state serialization
-- `packages/shapes` -- Basic shape primitives
 - `packages/tools` -- Tool definitions and executor
 - Unit tests for all core operations
 
@@ -694,7 +670,7 @@ key moments and the system will smoothly interpolate between them.
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Grid vs continuous coordinates | Grid-first with optional sub-pixel offset | LLMs work better with integers; token-efficient |
+| Grid vs continuous coordinates | Grid-only (pure integer coordinates, no continuous/sub-pixel) | LLMs work better with integers; fully deterministic; no ambiguity |
 | State format | Sparse JSON (only active particles) | Minimizes token usage while keeping full fidelity |
 | Animation model | Keyframe + interpolation with discrete events | Token-efficient; LLM defines 5-20 keyframes, engine generates hundreds of frames |
 | Connection representation | Edge list (LLM) + adjacency map (internal) | Edge list is LLM-readable; adjacency map is query-efficient |
