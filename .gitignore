@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+vendor/
+.pnp.*
+.yarn/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+.env.local
+.env.*.local
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Build artifacts
+out/
+build/
+dist/
+*.o
+*.so
+*.dylib
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage / Testing
+coverage/
+.nyc_output/
+.pytest_cache/
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# NOTE: The following are intentionally tracked:
+# - memory/ (agent memory files)
+# - .claude/ (agent config and hooks)
+# - CLAUDE.md (project instructions)
