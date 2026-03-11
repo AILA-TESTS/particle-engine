@@ -12,7 +12,7 @@ export interface GeminiResponseChunk {
 				text?: string | null;
 				functionCall?: {
 					name: string;
-					args: Record<string, unknown>;
+					args: object;
 				};
 			}>;
 		};

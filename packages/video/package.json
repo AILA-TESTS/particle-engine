@@ -16,6 +16,7 @@
     "@particle-engine/renderer-canvas": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
     "tsup": "^8.0.0",
     "vitest": "^3.0.0"
   }
