@@ -1,0 +1,19 @@
+{
+  "name": "particle-engine",
+  "private": true,
+  "packageManager": "pnpm@10.6.2",
+  "description": "Particle system foundation for LLM-driven visual creation",
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "turbo clean"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

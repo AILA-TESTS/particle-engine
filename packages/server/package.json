@@ -1,0 +1,30 @@
+{
+  "name": "@particle-engine/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@particle-engine/animation": "workspace:*",
+    "@particle-engine/client": "workspace:*",
+    "@particle-engine/core": "workspace:*",
+    "@particle-engine/provider-anthropic": "workspace:*",
+    "@particle-engine/provider-gemini": "workspace:*",
+    "@particle-engine/provider-openai": "workspace:*",
+    "@particle-engine/renderer-canvas": "workspace:*",
+    "@particle-engine/renderer-svg": "workspace:*",
+    "@particle-engine/renderer-webgl": "workspace:*",
+    "@particle-engine/tools": "workspace:*",
+    "@particle-engine/video": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}
