@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@particle-engine/animation": "workspace:*",
+    "@particle-engine/core": "workspace:*",
     "@particle-engine/renderer-canvas": "workspace:*"
   },
   "devDependencies": {
