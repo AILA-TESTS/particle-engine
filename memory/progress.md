@@ -89,9 +89,25 @@
   - Frame converter bridges FrameState (animation output) to SpaceState (renderer input)
   - No external dependencies beyond Node.js child_process
 
+### Session 2c — 2026-03-11 — Phase 4 (LLM Provider + Server)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (2 parallel Opus agents):**
+  1. LLMProvider types + provider-gemini (Opus) — Added shared LLMProvider interface to tools, implemented Gemini 3.1 Pro adapter with Vertex AI SDK — 34 tests passing
+  2. Server (Opus) — HTTP API with Hono, session management, conversation loop, SVG rendering — 52 tests passing
+- **Git History:**
+  - `5f81795` feat(tools): add LLMProvider interface and shared provider types
+  - `be0b898` feat(provider-gemini): implement Gemini provider with Vertex AI SDK
+  - `a79c234` feat(server): implement HTTP API with session management and conversation loop
+- **Key Outcomes:**
+  - **655 total tests passing** across 8 packages
+  - LLMProvider interface: Message, ToolCall, LLMEvent types shared across all providers
+  - GeminiProvider: Vertex AI SDK integration, tool format conversion, streaming, message format mapping
+  - Server: 7 HTTP endpoints (session CRUD, direct tool exec, LLM prompt, SVG render)
+  - Conversation loop: multi-round tool-use loop with event callbacks and usage tracking
+  - Session manager: independent grid+tools per session, in-memory storage
+
 ## Next Steps
-- Phase 4: LLM provider integration (`packages/provider-gemini` — Gemini 3.1 Pro)
-- Phase 5: Server + client
+- Phase 5: Client (browser preview UI) + additional providers (anthropic, openai)
 
 ## Architecture Decisions (Finalized)
 
