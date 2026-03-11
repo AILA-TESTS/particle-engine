@@ -106,8 +106,32 @@
   - Conversation loop: multi-round tool-use loop with event callbacks and usage tracking
   - Session manager: independent grid+tools per session, in-memory storage
 
-## Next Steps
-- Phase 5: Client (browser preview UI) + additional providers (anthropic, openai)
+### Session 2d — 2026-03-11 — Phase 5 (Client + Additional Providers)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (3 parallel Opus agents):**
+  1. Client (Opus) — Browser preview app with Vite, canvas rendering, prompt input, API client, dark UI — 20 tests passing
+  2. provider-anthropic (Opus) — Claude provider with streaming tool use, @anthropic-ai/sdk — 43 tests passing
+  3. provider-openai (Opus) — OpenAI provider with streaming function calls, openai SDK — 48 tests passing
+- **Git History:**
+  - `ff4eaa0` feat(client): implement browser preview app with canvas rendering and prompt input
+  - `aa27e58` feat(provider-anthropic): implement Claude provider with streaming tool use
+  - `0c7b62c` feat(provider-openai): implement OpenAI provider with streaming function calls
+- **Key Outcomes:**
+  - **766 total tests passing** across 11 packages
+  - Client: Vite-based vanilla TS web app, dark theme, canvas grid rendering, prompt input, tool call log, status bar
+  - All 3 LLM providers implemented: Gemini (Vertex AI), Claude (@anthropic-ai/sdk), OpenAI (openai SDK)
+  - Provider-agnostic architecture fully realized — swap providers by changing one config value
+  - 11 of 12 packages implemented (only renderer-webgl remains as scaffold)
+
+## Remaining
+- renderer-webgl (scaffold only — for large scenes, not critical for initial functionality)
+
+## All Phases Complete
+- Phase 1: Core engine (core, animation, tools)
+- Phase 2: Rendering (renderer-svg, renderer-canvas) + tools↔core integration
+- Phase 3: Video generation
+- Phase 4: LLM provider (Gemini) + server
+- Phase 5: Client + additional providers (Anthropic, OpenAI)
 
 ## Architecture Decisions (Finalized)
 
