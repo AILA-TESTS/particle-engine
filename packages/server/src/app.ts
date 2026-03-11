@@ -38,11 +38,12 @@ export function createAppWithWebSocket(config?: ServerConfig): AppWithWebSocket 
 	// Enable CORS for all origins (development mode)
 	app.use('*', cors());
 
-	// Create session manager with default grid dimensions
+	// Create session manager with default grid dimensions and optional persistence
 	const sessionManager = new SessionManager({
 		rows: config?.defaultGridRows,
 		cols: config?.defaultGridCols,
 		spacing: config?.defaultGridSpacing,
+		persistence: config?.persistence,
 	});
 
 	// Create and mount HTTP routes

@@ -95,6 +95,9 @@ export function createRoutes(
 				: {},
 		);
 
+		// Persist session state after tool execution
+		sessionManager.persistSession(id).catch(() => { /* fire-and-forget */ });
+
 		return c.json({ result });
 	});
 
@@ -144,6 +147,10 @@ export function createRoutes(
 			tools,
 			config,
 		);
+
+		// Persist conversation messages and updated grid state
+		sessionManager.updateMessages(id, result.messages);
+		sessionManager.persistSession(id).catch(() => { /* fire-and-forget */ });
 
 		return c.json({
 			messages: result.messages,

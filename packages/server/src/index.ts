@@ -8,7 +8,7 @@ export type { AppWithWebSocket } from './app.js';
 
 // Session management
 export { SessionManager } from './session-manager.js';
-export type { SessionData } from './session-manager.js';
+export type { SessionData, SessionManagerConfig } from './session-manager.js';
 
 // Conversation loop
 export { runConversation } from './conversation-loop.js';
@@ -29,6 +29,8 @@ export type {
 	ServerConfig,
 	SessionConfig,
 	Session,
+	PersistenceConfig,
+	PersistedSessionData,
 	LLMProvider,
 	LLMEvent,
 	Message,
