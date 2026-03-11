@@ -1,4 +1,4 @@
-import type { ParticleGrid } from "../grid/particle-grid.js";
+import type { ParticleGrid } from "@particle-engine/core";
 import type { ToolResult } from "../types.js";
 
 export function handleGetSpaceInfo(grid: ParticleGrid): ToolResult {
@@ -52,10 +52,21 @@ export function handleGetState(
 	}
 
 	const state = grid.getState(options);
+	// Map serialized particles (short keys r/c) to full form (row/col) for backward compatibility
+	const particles = state.particles.map((p) => ({
+		row: p.r,
+		col: p.c,
+		active: true,
+		color: p.color,
+		opacity: p.opacity,
+		size: p.size,
+		layer: p.layer,
+		group: p.group,
+	}));
 	return {
 		success: true,
 		data: {
-			particles: state.particles,
+			particles,
 			connections: state.connections,
 		},
 	};

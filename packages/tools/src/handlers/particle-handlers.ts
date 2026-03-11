@@ -1,4 +1,4 @@
-import type { ParticleGrid } from "../grid/particle-grid.js";
+import type { ParticleGrid } from "@particle-engine/core";
 import { setParticlesSchema, clearParticlesSchema } from "../schemas/index.js";
 import type { ToolResult } from "../types.js";
 import { validateBounds, validateParams } from "../validation.js";
@@ -27,7 +27,6 @@ export function handleSetParticles(
 			size: p.size,
 			opacity: p.opacity,
 			group: p.group,
-			label: p.label,
 			layer: p.layer,
 		});
 		set.push({ row: p.row, col: p.col });
@@ -52,14 +51,14 @@ export function handleClearParticles(
 	if (data.all) {
 		const info = grid.getSpaceInfo();
 		cleared = info.activeCount;
-		grid.clearAll();
+		grid.clearParticles();
 		return { success: true, data: { cleared } };
 	}
 
 	if (data.group) {
-		const stateBefore = grid.getState({ group: data.group });
-		cleared += stateBefore.particles.length;
-		grid.clearGroup(data.group);
+		const state = grid.getState({ group: data.group });
+		cleared += state.particles.length;
+		grid.clearParticles(undefined, data.group);
 	}
 
 	if (data.coordinates) {

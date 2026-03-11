@@ -13,8 +13,8 @@ import {
 	snapshotDefinition,
 	undoDefinition,
 } from "./definitions/index.js";
-import { ParticleGrid } from "./grid/particle-grid.js";
-import type { StateSnapshot } from "./grid/types.js";
+import { ParticleGrid } from "@particle-engine/core";
+import type { StateSnapshot } from "@particle-engine/core";
 import {
 	handleClearParticles,
 	handleConnect,
