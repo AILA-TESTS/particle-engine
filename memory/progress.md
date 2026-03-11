@@ -22,24 +22,40 @@
   - Research recommends: grid-first addressing, sparse JSON for LLM comms, SoA typed arrays, keyframe animation, pnpm monorepo with 13 packages, TypeScript
   - GitHub org is **AILA-TESTS** (with S), not AILA-TEST
 
+### Session 1b — 2026-03-11 — Architecture Decisions & Interpolation Research
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed:**
+  1. Architecture update (Opus) — Applied 7 owner decisions, removed shapes/primitives, removed sub-pixel offsets, added ADR-004 through ADR-010
+  2. Deep interpolation research (Opus) — ~2,000 lines of research + design across two documents
+- **Git History:**
+  - `f9acd82` Apply 7 architectural decisions to project documentation
+  - `0e91d50` Add deep research on interpolation systems
+- **Key Outcomes:**
+  - 7 architectural decisions formally recorded (ADR-004 to ADR-010)
+  - Pure grid system confirmed (no continuous coordinates)
+  - No shape primitives — LLM creates everything from raw particles/connections
+  - Interpolation research recommends: OKLAB color space, bilinear distribution for grid smoothness, spring physics, Bresenham grid stepping, precomputed easing LUTs
+  - 12 packages in monorepo (shapes removed)
+  - 13 LLM tools (draw_shape removed)
+
 ## Next Steps
-- Review research and finalize architecture
 - Begin implementation planning (Phase 1: core engine)
-- Set up monorepo structure with pnpm
-- Implement core particle data structures
+- Set up pnpm monorepo structure
+- Implement core particle data structures (hybrid grid + typed arrays)
+- Implement interpolation engine based on research
 
-## Architecture Decisions
+## Architecture Decisions (Finalized)
 
-- Provider-agnostic design with Gemini 3.1 Pro as primary
-- Particle system approach over Manim/React libraries
-- Agent hierarchy: Managing Agent -> Sub-agents (never direct code)
-- Git worktrees for major changes
-- Grid-first `[row, col]` addressing (LLM-optimal)
-- Sparse JSON as LLM communication format
-- Struct-of-Arrays typed array layout for performance
-- Keyframe + interpolation animation model
-- Custom thin provider adapter (no third-party LLM abstraction)
-- Data over code — LLM sends tool calls, never generates executable code
+- **ADR-001:** Particle system over Manim/React libraries
+- **ADR-002:** Provider-agnostic with Gemini 3.1 Pro primary
+- **ADR-003:** Managing Agent pattern (never writes code)
+- **ADR-004:** Hybrid data structure (grid index + flat typed arrays)
+- **ADR-005:** Pure grid coordinates (no continuous/sub-pixel)
+- **ADR-006:** Sparse JSON format for LLM communication
+- **ADR-007:** Edge list for connections
+- **ADR-008:** Keyframe + interpolation animation model
+- **ADR-009:** No shape primitives (LLM creates from raw particles)
+- **ADR-010:** Custom interpolation system (OKLAB, bilinear distribution, spring physics)
 
 ## Key File Locations
 
@@ -49,5 +65,7 @@
 - Project Config: `CLAUDE.md`
 - Research: `docs/research/particle-system-research.md`
 - Architecture Rec: `docs/research/recommended-architecture.md`
+- Interpolation Research: `docs/research/interpolation-system-research.md`
+- Interpolation Design: `docs/research/interpolation-system-design.md`
 - Decisions Log: `memory/decisions.md`
 - Memory Guard: `.claude/hooks/memory-guard.sh`
