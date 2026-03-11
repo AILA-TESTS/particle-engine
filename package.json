@@ -4,6 +4,8 @@
   "packageManager": "pnpm@10.6.2",
   "description": "Particle system foundation for LLM-driven visual creation",
   "scripts": {
+    "start": "npx tsx bin/particle-engine.ts",
+    "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "biome check .",
@@ -12,6 +14,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "tsx": "^4.19.0",
     "turbo": "^2.4.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
