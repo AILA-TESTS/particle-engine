@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "command": ".claude/hooks/memory-guard.sh"
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "command": ".claude/hooks/memory-guard.sh"
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "command": ".claude/hooks/memory-guard.sh"
+      }
+    ]
+  }
+}
