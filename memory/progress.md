@@ -75,8 +75,21 @@
   - Canvas renderer: isomorphic via injected CanvasContext2D/CanvasFactory — no canvas dependency
   - Both renderers share compatible interfaces (RenderConfig, layout logic)
 
+### Session 2b — 2026-03-11 — Phase 3 (Video Generation)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed:**
+  1. packages/video (Opus) — VideoGenerator with FFmpeg pipeline, FrameState→SpaceState converter, FFmpeg arg builder, mock-based testing — 63 tests passing
+- **Git History:**
+  - `808b0b2` feat(video): implement video generation with FFmpeg pipeline and frame conversion
+- **Key Outcomes:**
+  - **569 total tests passing** across 6 packages
+  - Full pipeline: Animation → AnimationEngine → FrameState → SpaceState → CanvasRenderer → RGBA buffer → FFmpeg stdin → video file
+  - Supports MP4 (H.264), WebM (VP9), GIF formats
+  - Quality-to-CRF mapping, HiDPI support, configurable FFmpeg path
+  - Frame converter bridges FrameState (animation output) to SpaceState (renderer input)
+  - No external dependencies beyond Node.js child_process
+
 ## Next Steps
-- Phase 3: Video generation (`packages/video` — FFmpeg integration, uses canvas renderer)
 - Phase 4: LLM provider integration (`packages/provider-gemini` — Gemini 3.1 Pro)
 - Phase 5: Server + client
 
