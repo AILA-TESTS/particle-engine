@@ -1,5 +1,29 @@
 import type { LLMEvent } from "@particle-engine/tools";
-import type { GenerateContentResponse } from "@google-cloud/vertexai";
+
+/**
+ * Minimal response shape shared by both @google-cloud/vertexai and @google/generative-ai.
+ * Both SDKs produce this same structure in their streaming responses.
+ */
+export interface GeminiResponseChunk {
+	candidates?: Array<{
+		content?: {
+			role?: string;
+			parts?: Array<{
+				text?: string | null;
+				functionCall?: {
+					name: string;
+					args: Record<string, unknown>;
+				};
+			}>;
+		};
+		index?: number;
+	}>;
+	usageMetadata?: {
+		promptTokenCount?: number;
+		candidatesTokenCount?: number;
+		totalTokenCount?: number;
+	};
+}
 
 /** Counter for generating unique tool call IDs (Gemini doesn't provide them) */
 let toolCallCounter = 0;
@@ -15,7 +39,7 @@ export function resetToolCallCounter(): void {
 }
 
 /** Parse a Gemini streaming response chunk into LLMEvent(s) */
-export function parseResponseChunk(chunk: GenerateContentResponse): LLMEvent[] {
+export function parseResponseChunk(chunk: GeminiResponseChunk): LLMEvent[] {
 	const events: LLMEvent[] = [];
 	const candidates = chunk.candidates;
 

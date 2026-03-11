@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { parseResponseChunk, resetToolCallCounter } from "../src/parse-response.js";
-import type { GenerateContentResponse } from "@google-cloud/vertexai";
+import type { GeminiResponseChunk } from "../src/parse-response.js";
 
 describe("parseResponseChunk", () => {
 	beforeEach(() => {
@@ -8,7 +8,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("parses a text response into a text event", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [
 				{
 					content: {
@@ -27,7 +27,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("parses a function call response into a tool_call event", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [
 				{
 					content: {
@@ -58,7 +58,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("parses multiple function calls into multiple events", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [
 				{
 					content: {
@@ -98,7 +98,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("parses usage metadata into a done event", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [
 				{
 					content: {
@@ -126,7 +126,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("handles chunk with no candidates but usage metadata", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [],
 			usageMetadata: {
 				promptTokenCount: 200,
@@ -145,7 +145,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("handles chunk with no candidates and no metadata", () => {
-		const chunk: GenerateContentResponse = {};
+		const chunk: GeminiResponseChunk = {};
 
 		const events = parseResponseChunk(chunk);
 
@@ -153,7 +153,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("handles chunk with text and function call in same candidate", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			candidates: [
 				{
 					content: {
@@ -176,7 +176,7 @@ describe("parseResponseChunk", () => {
 	});
 
 	it("handles missing usage counts gracefully", () => {
-		const chunk: GenerateContentResponse = {
+		const chunk: GeminiResponseChunk = {
 			usageMetadata: {},
 		};
 

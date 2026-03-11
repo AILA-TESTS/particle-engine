@@ -68,6 +68,13 @@ tmp/
 temp/
 *.tmp
 
+# Extra keys
+.env.sample
+*.iam.gserviceaccount.com
+gen-lang-client-*.json
+gcp-key.json
+
+
 # NOTE: The following are intentionally tracked:
 # - memory/ (agent memory files)
 # - .claude/ (agent config and hooks)
