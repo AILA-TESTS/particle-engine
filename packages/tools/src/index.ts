@@ -1,5 +1,13 @@
 export { ToolExecutor } from "./tool-executor.js";
 export type { ToolDefinition, ToolResult, Animation, AnimationKeyframe, AnimationEvent } from "./types.js";
+export type {
+	LLMProvider,
+	LLMEvent,
+	Message,
+	ToolCall,
+	ToolCallResult,
+	ProviderConfig,
+} from "./provider-types.js";
 export { ParticleGrid } from "@particle-engine/core";
 export type {
 	GridConfig,
