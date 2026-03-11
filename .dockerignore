@@ -1,0 +1,51 @@
+# Dependencies (reinstalled in container)
+node_modules/
+**/node_modules/
+
+# Build artifacts (rebuilt in container)
+**/dist/
+.turbo/
+
+# Environment files (secrets — pass via -e or env_file)
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent memory and config (not needed in container)
+memory/
+.claude/
+CLAUDE.md
+
+# Documentation (not needed in container)
+docs/
+*.md
+!packages/*/README.md
+
+# Test artifacts
+coverage/
+**/*.test.ts
+**/__tests__/
+
+# Sessions (mounted as volume)
+sessions/
+
+# Credential files
+*.json
+!package.json
+!turbo.json
+!tsconfig.json
+!**/package.json
+!**/tsconfig.json
