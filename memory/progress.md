@@ -123,15 +123,47 @@
   - Provider-agnostic architecture fully realized — swap providers by changing one config value
   - 11 of 12 packages implemented (only renderer-webgl remains as scaffold)
 
-## Remaining
-- renderer-webgl (scaffold only — for large scenes, not critical for initial functionality)
+### Session 3 — 2026-03-12 — Post-Phase Polish & Documentation
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed:**
+  1. E2E test with real Gemini LLM (Opus) — full pipeline validated: prompt → Gemini → tool calls → grid state → SVG render
+  2. Provider-gemini dual auth (Opus) — added API key mode (@google/generative-ai) alongside Vertex AI, auto-detect — 64 tests
+  3. WebSocket support (Opus) — server WSConnectionHandler + client WebSocketClient with auto-reconnect and HTTP fallback — server 65 tests, client 39 tests
+  4. Session persistence (Opus) — file-based JSON with atomic writes, auto-recovery on startup — server 93 tests
+  5. renderer-webgl (Opus) — GPU instanced rendering, SDF circles, WebGL 1+2 support — 85 tests
+  6. Turbo test fix (Sonnet) — resolved DTS type mismatches, missing deps across packages — all 12 packages pass
+  7. Documentation (Sonnet) — root README + 12 package READMEs
+  8. CLI + DX polish (Sonnet) — bin/particle-engine.ts with flags, example prompts, dev scripts — 34 CLI tests
+  9. Deployment guide (Opus) — docs/deployment-guide.md, Dockerfile, docker-compose.yml, .dockerignore
+  10. Testing playground (Opus) — scripts/setup-playground.sh, docs/testing-guide.md
+  11. User guide (Sonnet) — docs/user-guide.md (958 lines)
+- **Git History:**
+  - `f3f2805` feat(provider-gemini): add API key auth mode and E2E test with real Gemini LLM
+  - `7c7f3d3` feat(server,client): add WebSocket support for real-time LLM streaming
+  - `8bae6b8` feat(server): add file-based session persistence with atomic writes
+  - `632bb6f` feat(renderer-webgl): implement GPU-accelerated WebGL renderer
+  - `0cc61cf` fix: resolve turbo test failures across all packages
+  - `3e64148` docs: add root README and per-package documentation
+  - `1bf467a` feat: add CLI entry point, dev scripts, and example prompts
+  - `cdd0339` docs: add deployment guide, Docker setup, and testing playground
+- **Key Outcomes:**
+  - **975 total tests passing** across **12/12 packages** (all implemented, no scaffolds)
+  - E2E validated with real Gemini LLM — full pipeline works
+  - Provider-gemini dual auth (API key + Vertex AI) with auto-detection
+  - WebSocket real-time streaming with HTTP fallback
+  - File-based session persistence with atomic writes and auto-recovery
+  - renderer-webgl: instanced rendering, SDF circles, 85 tests
+  - CLI entry point with --port, --provider, --model, --persist-dir flags
+  - Dockerfile + docker-compose.yml for containerized deployment
+  - Full docs: README, 12 package READMEs, deployment guide, testing guide, user guide
 
-## All Phases Complete
+## All Phases + Post-Phase Complete
 - Phase 1: Core engine (core, animation, tools)
 - Phase 2: Rendering (renderer-svg, renderer-canvas) + tools↔core integration
 - Phase 3: Video generation
 - Phase 4: LLM provider (Gemini) + server
 - Phase 5: Client + additional providers (Anthropic, OpenAI)
+- Post-phase: E2E, WebSocket, persistence, renderer-webgl, CLI, docs, Docker
 
 ## Architecture Decisions (Finalized)
 
