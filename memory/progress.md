@@ -57,11 +57,27 @@
   - Tools: 13 tools with zod validation, undo stack, named snapshots, animation storage
   - Monorepo: pnpm workspaces + turborepo, 12 packages scaffolded
 
+### Session 2 — 2026-03-11 — Phase 2 (Tools Integration + Renderers)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (3 parallel Opus agents):**
+  1. Tools ↔ Core integration (Opus) — Deleted grid stub, rewired all handlers to use `@particle-engine/core`, added `getConfig()` to core, updated connection ID patterns — 62 tests passing
+  2. renderer-svg (Opus) — Full SVG renderer: circle/square particles, solid/dashed/dotted connections, bezier curves, directed arrows, labels, layer ordering, grid dots — 80 tests passing
+  3. renderer-canvas (Opus) — Isomorphic Canvas 2D renderer: accepts any `CanvasContext2D` (browser/Node), mock-canvas testing, same feature set as SVG — 66 tests passing
+- **Git History:**
+  - `fe5e6f6` feat(renderer-svg): implement SVG renderer with connection styles and layer support
+  - `b64dc66` refactor(tools): replace grid stub with @particle-engine/core integration
+  - `2ff71e0` feat(renderer-canvas): implement isomorphic Canvas 2D renderer with mock testing
+  - `e62434f` chore: add .turbo/ to gitignore
+- **Key Outcomes:**
+  - **506 total tests passing** across 5 packages (core: 100, animation: 198, tools: 62, renderer-svg: 80, renderer-canvas: 66)
+  - Tools grid stub fully removed — all handlers use real core ParticleGrid
+  - SVG renderer: zero dependencies, pure string output, self-contained SVG documents
+  - Canvas renderer: isomorphic via injected CanvasContext2D/CanvasFactory — no canvas dependency
+  - Both renderers share compatible interfaces (RenderConfig, layout logic)
+
 ## Next Steps
-- Integrate tools with real core package (replace internal grid stub)
-- Phase 2: Rendering (renderer-svg, renderer-canvas)
-- Phase 3: Video generation
-- Phase 4: LLM provider integration (Gemini 3.1 Pro)
+- Phase 3: Video generation (`packages/video` — FFmpeg integration, uses canvas renderer)
+- Phase 4: LLM provider integration (`packages/provider-gemini` — Gemini 3.1 Pro)
 - Phase 5: Server + client
 
 ## Architecture Decisions (Finalized)
