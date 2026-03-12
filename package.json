@@ -7,13 +7,15 @@
     "start": "npx tsx bin/particle-engine.ts",
     "dev": "turbo dev",
     "build": "turbo build",
+    "build:cli": "tsup bin/particle-engine.ts --format esm --outDir dist-bin --no-dts --external @particle-engine/core --external @particle-engine/animation --external @particle-engine/tools --external @particle-engine/server --external @particle-engine/provider-gemini --external @particle-engine/provider-anthropic --external @particle-engine/provider-openai --external ws --external @hono/node-server",
     "test": "turbo test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "clean": "turbo clean"
+    "clean": "turbo clean && rm -rf dist-bin"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.19.0",
     "turbo": "^2.4.0",
     "typescript": "^5.7.0",

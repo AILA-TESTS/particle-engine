@@ -50,6 +50,9 @@ COPY . .
 # Build all packages in dependency order via turborepo
 RUN pnpm build
 
+# Build the CLI entry point into a single compiled JS file
+RUN pnpm build:cli
+
 # Build the client for production (static files)
 RUN cd packages/client && pnpm build
 
@@ -99,12 +102,8 @@ COPY --from=build /app/packages/server/dist packages/server/dist
 # Copy built client static files
 COPY --from=build /app/packages/client/dist packages/client/dist
 
-# Copy the CLI entry point and its source (runs via tsx)
-COPY bin/ bin/
-COPY packages/server/src/ packages/server/src/
-COPY packages/provider-gemini/src/ packages/provider-gemini/src/
-COPY packages/provider-anthropic/src/ packages/provider-anthropic/src/
-COPY packages/provider-openai/src/ packages/provider-openai/src/
+# Copy the compiled CLI bundle (no tsx or source files needed)
+COPY --from=build /app/dist-bin dist-bin/
 
 # Create sessions directory
 RUN mkdir -p /app/sessions
@@ -120,6 +119,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:3000/api/sessions || exit 1
 
-# Start the server
-# The CLI loads .env, starts the Hono server, and enables WebSocket
-CMD ["npx", "tsx", "bin/particle-engine.ts", "--port", "3000", "--persist-dir", "/app/sessions"]
+# Start the server using the compiled CLI bundle (no tsx required)
+CMD ["node", "dist-bin/particle-engine.mjs", "--port", "3000", "--persist-dir", "/app/sessions"]

@@ -254,11 +254,11 @@ async function main(): Promise<void> {
 	const providerName = (args.provider as ProviderName | null) ?? detectProvider();
 
 	// Build provider instance
-	let provider: import('../packages/server/src/types.js').LLMProvider | undefined;
+	let provider: import('@particle-engine/server').LLMProvider | undefined;
 	let resolvedModelId: string | null = args.model;
 
 	if (providerName === 'gemini') {
-		const { GeminiProvider } = await import('../packages/provider-gemini/src/index.js');
+		const { GeminiProvider } = await import('@particle-engine/provider-gemini');
 		const apiKey = process.env.GOOGLE_API_KEY;
 		const projectId = process.env.GCP_PROJECT_ID;
 		const location = process.env.GCP_REGION ?? 'us-central1';
@@ -276,9 +276,9 @@ async function main(): Promise<void> {
 			: { projectId: projectId!, location, modelId: args.model ?? undefined };
 
 		provider = new GeminiProvider(config);
-		resolvedModelId = args.model ?? (apiKey ? 'gemini-2.0-flash' : 'gemini-2.0-flash');
+		resolvedModelId = args.model ?? 'gemini-2.0-flash';
 	} else if (providerName === 'anthropic') {
-		const { AnthropicProvider } = await import('../packages/provider-anthropic/src/index.js');
+		const { AnthropicProvider } = await import('@particle-engine/provider-anthropic');
 		const apiKey = process.env.ANTHROPIC_API_KEY;
 
 		if (!apiKey) {
@@ -291,7 +291,7 @@ async function main(): Promise<void> {
 		provider = new AnthropicProvider({ apiKey, modelId: args.model ?? undefined });
 		resolvedModelId = args.model ?? 'claude-sonnet-4-20250514';
 	} else if (providerName === 'openai') {
-		const { OpenAIProvider } = await import('../packages/provider-openai/src/index.js');
+		const { OpenAIProvider } = await import('@particle-engine/provider-openai');
 		const apiKey = process.env.OPENAI_API_KEY;
 
 		if (!apiKey) {
@@ -308,7 +308,7 @@ async function main(): Promise<void> {
 	}
 
 	// Build server config
-	const { createAppWithWebSocket } = await import('../packages/server/src/app.js');
+	const { createAppWithWebSocket } = await import('@particle-engine/server');
 	const { WebSocketServer } = await import('ws');
 
 	const persistenceConfig = args.persist
