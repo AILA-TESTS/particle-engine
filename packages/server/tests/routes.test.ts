@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createApp } from '../src/app.js';
+import { createApp, createAppWithWebSocket } from '../src/app.js';
 import type { LLMProvider, LLMEvent, Message, ToolCall, ProviderConfig } from '../src/types.js';
 import type { ToolDefinition, ToolResult } from '@particle-engine/tools';
 
 // ── Helper: make a mock LLM provider ───────────────────────
 
-function createMockProvider(rounds: LLMEvent[][]): LLMProvider {
+function createMockProvider(rounds: LLMEvent[][], onStream?: (messages: Message[]) => void): LLMProvider {
 	let roundIndex = 0;
 
 	return {
@@ -20,6 +20,7 @@ function createMockProvider(rounds: LLMEvent[][]): LLMProvider {
 			_tools: ToolDefinition[],
 			_config?: ProviderConfig,
 		): AsyncIterable<LLMEvent> {
+			if (onStream) onStream(_messages);
 			const events = rounds[roundIndex] ?? [];
 			roundIndex++;
 
@@ -46,6 +47,17 @@ function createMockProvider(rounds: LLMEvent[][]): LLMProvider {
 			return result;
 		},
 	};
+}
+
+// ── Helper: capturing mock provider (records messages passed to stream) ──
+
+function createCapturingProvider(onStream: (messages: Message[]) => void): LLMProvider {
+	return createMockProvider([
+		[
+			{ type: 'text', content: 'ok' },
+			{ type: 'done', usage: { inputTokens: 1, outputTokens: 1 } },
+		],
+	], (msgs) => onStream([...msgs]));
 }
 
 // ── Helper: JSON request ────────────────────────────────────
@@ -355,6 +367,64 @@ describe('Routes', () => {
 			);
 
 			expect(res.status).toBe(400);
+		});
+
+		it('does not drop first message when history has no leading system message', async () => {
+			let capturedMessages: Message[] = [];
+			const provider = createCapturingProvider((msgs) => { capturedMessages = msgs; });
+
+			const { app, sessionManager } = createAppWithWebSocket({ provider });
+			const createRes = await app.request(jsonRequest('POST', '/api/sessions', { rows: 10, cols: 10, spacing: 10 }));
+			const { id } = await createRes.json();
+
+			// Seed messages WITHOUT a leading system message (simulates a provider that doesn't return it)
+			sessionManager.updateMessages(id, [
+				{ role: 'user', content: 'first user message' },
+				{ role: 'assistant', content: 'first response' },
+			]);
+
+			await app.request(
+				jsonRequest('POST', `/api/sessions/${id}/prompt`, { prompt: 'second question' }),
+			);
+
+			// The first message should be system (freshly built)
+			expect(capturedMessages[0].role).toBe('system');
+			// The seeded user message must NOT be dropped
+			expect(capturedMessages[1]).toEqual({ role: 'user', content: 'first user message' });
+			expect(capturedMessages[2]).toEqual({ role: 'assistant', content: 'first response' });
+			// The new prompt is last
+			expect(capturedMessages[capturedMessages.length - 1]).toEqual({ role: 'user', content: 'second question' });
+		});
+
+		it('correctly strips leading system message from history', async () => {
+			let capturedMessages: Message[] = [];
+			const provider = createCapturingProvider((msgs) => { capturedMessages = msgs; });
+
+			const { app, sessionManager } = createAppWithWebSocket({ provider });
+			const createRes = await app.request(jsonRequest('POST', '/api/sessions', { rows: 10, cols: 10, spacing: 10 }));
+			const { id } = await createRes.json();
+
+			// Seed messages WITH a leading system message (normal case)
+			sessionManager.updateMessages(id, [
+				{ role: 'system', content: 'old system prompt' },
+				{ role: 'user', content: 'first user message' },
+				{ role: 'assistant', content: 'first response' },
+			]);
+
+			await app.request(
+				jsonRequest('POST', `/api/sessions/${id}/prompt`, { prompt: 'second question' }),
+			);
+
+			// The old system prompt should be replaced, not duplicated
+			expect(capturedMessages[0].role).toBe('system');
+			expect(capturedMessages[0].content).not.toBe('old system prompt');
+			// History should follow
+			expect(capturedMessages[1]).toEqual({ role: 'user', content: 'first user message' });
+			expect(capturedMessages[2]).toEqual({ role: 'assistant', content: 'first response' });
+			expect(capturedMessages[capturedMessages.length - 1]).toEqual({ role: 'user', content: 'second question' });
+			// No duplicate system messages
+			const systemMessages = capturedMessages.filter((m) => m.role === 'system');
+			expect(systemMessages).toHaveLength(1);
 		});
 	});
 

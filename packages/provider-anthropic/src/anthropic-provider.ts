@@ -68,7 +68,7 @@ export class AnthropicProvider implements LLMProvider {
 			const pendingToolCalls = new Map<number, PendingToolCall>();
 
 			for await (const event of stream) {
-				const eventObj = event as Record<string, unknown>;
+				const eventObj = event as unknown as Record<string, unknown>;
 
 				if (eventObj.type === "content_block_start") {
 					const result = parseContentBlockStart(eventObj);

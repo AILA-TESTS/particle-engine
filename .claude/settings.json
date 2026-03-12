@@ -4,6 +4,10 @@
       {
         "matcher": "",
         "command": ".claude/hooks/memory-guard.sh"
+      },
+      {
+        "matcher": "",
+        "command": ".claude/hooks/context-monitor.sh \"$TRANSCRIPT_PATH\" \"$SESSION_ID\""
       }
     ],
     "Notification": [
@@ -16,6 +20,12 @@
       {
         "matcher": "",
         "command": ".claude/hooks/memory-guard.sh"
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "command": ".claude/hooks/pre-compact-memory-save.sh \"$TRANSCRIPT_PATH\" \"$SESSION_ID\""
       }
     ]
   }

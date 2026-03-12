@@ -95,6 +95,9 @@ export function createRoutes(
 				: {},
 		);
 
+		// Persist session state after tool execution
+		sessionManager.persistSession(id).catch(() => { /* fire-and-forget */ });
+
 		return c.json({ result });
 	});
 
@@ -130,8 +133,13 @@ export function createRoutes(
 		const spaceInfo = data.executor.getGrid().getSpaceInfo();
 		const systemPrompt = buildSystemPrompt(spaceInfo);
 
+		const existingMessages = sessionManager.getMessages(id);
+		const historyWithoutSystem = existingMessages.length > 0 && existingMessages[0].role === 'system'
+			? existingMessages.slice(1)
+			: existingMessages;
 		const messages: Message[] = [
 			{ role: 'system', content: systemPrompt },
+			...historyWithoutSystem,
 			{ role: 'user', content: prompt },
 		];
 
@@ -144,6 +152,9 @@ export function createRoutes(
 			tools,
 			config,
 		);
+
+		// Persist conversation messages and updated grid state
+		sessionManager.updateMessages(id, result.messages);
 
 		return c.json({
 			messages: result.messages,

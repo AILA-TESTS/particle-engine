@@ -32,6 +32,21 @@ export interface Session {
 	config: Required<SessionConfig>;
 }
 
+// ── Persistence types ───────────────────────────────────────
+
+/** Configuration for session persistence */
+export interface PersistenceConfig {
+	enabled: boolean;
+	directory: string;         // path to directory where session files are stored
+}
+
+/** Persisted session data (written to disk as JSON) */
+export interface PersistedSessionData {
+	session: Session;
+	gridState: import('@particle-engine/core').SpaceState;
+	messages: import('@particle-engine/tools').Message[];
+}
+
 // ── Server configuration ────────────────────────────────────
 
 /** Configuration for the server */
@@ -42,4 +57,5 @@ export interface ServerConfig {
 	defaultGridCols?: number;
 	defaultGridSpacing?: number;
 	providerConfig?: import('@particle-engine/tools').ProviderConfig;
+	persistence?: PersistenceConfig;
 }

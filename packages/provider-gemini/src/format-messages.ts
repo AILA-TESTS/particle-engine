@@ -1,18 +1,38 @@
 import type { Message } from "@particle-engine/tools";
-import type { Content, Part } from "@google-cloud/vertexai";
+
+/**
+ * Minimal Content/Part types shared by both @google-cloud/vertexai and @google/generative-ai.
+ * Both SDKs use the same structure for message contents.
+ */
+export interface GeminiPart {
+	text?: string;
+	functionCall?: {
+		name: string;
+		args: Record<string, unknown>;
+	};
+	functionResponse?: {
+		name: string;
+		response: object;
+	};
+}
+
+export interface GeminiContent {
+	role: string;
+	parts: GeminiPart[];
+}
 
 /** Result of formatting messages — system instruction is separated from content */
 export interface FormattedMessages {
 	/** System instruction text (if any) */
 	systemInstruction: string | undefined;
 	/** Converted Content array for Gemini */
-	contents: Content[];
+	contents: GeminiContent[];
 }
 
 /** Convert our Message[] to Gemini's Content[] format, extracting system instructions */
 export function formatMessages(messages: Message[]): FormattedMessages {
 	let systemInstruction: string | undefined;
-	const contents: Content[] = [];
+	const contents: GeminiContent[] = [];
 
 	for (const message of messages) {
 		switch (message.role) {
@@ -29,7 +49,7 @@ export function formatMessages(messages: Message[]): FormattedMessages {
 				break;
 
 			case "assistant": {
-				const parts: Part[] = [];
+				const parts: GeminiPart[] = [];
 
 				// Add text content if present
 				if (message.content) {
@@ -58,7 +78,7 @@ export function formatMessages(messages: Message[]): FormattedMessages {
 			case "tool": {
 				// Tool results become user messages with functionResponse parts
 				if (message.toolResults) {
-					const parts: Part[] = message.toolResults.map((tr) => ({
+					const parts: GeminiPart[] = message.toolResults.map((tr) => ({
 						functionResponse: {
 							name: tr.name,
 							response: tr.result as object,
