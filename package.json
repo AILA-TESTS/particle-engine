@@ -4,7 +4,8 @@
   "packageManager": "pnpm@10.6.2",
   "description": "Particle system foundation for LLM-driven visual creation",
   "scripts": {
-    "start": "npx tsx bin/particle-engine.ts",
+    "start": "node dist-bin/particle-engine.mjs",
+    "start:dev": "npx tsx bin/particle-engine.ts",
     "dev": "turbo dev",
     "build": "turbo build",
     "build:cli": "tsup bin/particle-engine.ts --format esm --outDir dist-bin --no-dts --external @particle-engine/core --external @particle-engine/animation --external @particle-engine/tools --external @particle-engine/server --external @particle-engine/provider-gemini --external @particle-engine/provider-anthropic --external @particle-engine/provider-openai --external ws --external @hono/node-server",
