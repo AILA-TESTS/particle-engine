@@ -319,7 +319,7 @@ renderer-*   video       server  ←  client
 | `POST` | `/api/sessions/:id/prompt` | Send a prompt to the LLM |
 | `GET` | `/api/sessions/:id/render` | Render current state as SVG |
 
-WebSocket connections are handled at `ws://localhost:3000/ws/session/:id`.
+WebSocket connections are handled at `ws://localhost:3000/api/ws`.
 
 ## License
 

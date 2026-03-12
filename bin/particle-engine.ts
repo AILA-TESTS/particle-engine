@@ -28,7 +28,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { createServer } from 'node:http';
-import { serve } from '@hono/node-server';
+import { getRequestListener } from '@hono/node-server';
 
 // ── Simple dotenv loader (no dependencies) ──────────────────
 
@@ -347,7 +347,7 @@ async function main(): Promise<void> {
 	wss.on('connection', wsHandler);
 
 	httpServer.on('upgrade', (req, socket, head) => {
-		if (req.url === '/ws') {
+		if (req.url === '/api/ws' || req.url?.startsWith('/api/ws?')) {
 			wss.handleUpgrade(req, socket, head, (ws) => {
 				wss.emit('connection', ws, req);
 			});
@@ -356,16 +356,12 @@ async function main(): Promise<void> {
 		}
 	});
 
-	// Start the Hono app via @hono/node-server on the existing httpServer
-	serve(
-		{
-			fetch: app.fetch,
-			port: args.port,
-		},
-		(info) => {
-			console.log(`[particle-engine] Listening on http://localhost:${info.port}`);
-		},
-	);
+	// Wire the Hono app into the same HTTP server that handles WebSocket upgrades
+	const requestListener = getRequestListener(app.fetch);
+	httpServer.on('request', requestListener);
+	httpServer.listen(args.port, () => {
+		console.log(`[particle-engine] Listening on http://localhost:${args.port}`);
+	});
 }
 
 main().catch((err) => {
