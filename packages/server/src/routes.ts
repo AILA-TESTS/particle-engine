@@ -134,16 +134,14 @@ export function createRoutes(
 		const systemPrompt = buildSystemPrompt(spaceInfo);
 
 		const existingMessages = sessionManager.getMessages(id);
-		const messages: Message[] = existingMessages.length > 0
-			? [
-				{ role: 'system', content: systemPrompt },
-				...existingMessages.slice(1),
-				{ role: 'user', content: prompt },
-			]
-			: [
-				{ role: 'system', content: systemPrompt },
-				{ role: 'user', content: prompt },
-			];
+		const historyWithoutSystem = existingMessages.length > 0 && existingMessages[0].role === 'system'
+			? existingMessages.slice(1)
+			: existingMessages;
+		const messages: Message[] = [
+			{ role: 'system', content: systemPrompt },
+			...historyWithoutSystem,
+			{ role: 'user', content: prompt },
+		];
 
 		const tools = data.executor.getToolDefinitions();
 

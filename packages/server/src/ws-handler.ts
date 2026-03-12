@@ -123,16 +123,14 @@ export class WSConnectionHandler {
 		const systemPrompt = buildSystemPrompt(spaceInfo);
 
 		const existingMessages = this.sessionManager.getMessages(this.sessionId!);
-		const messages: Message[] = existingMessages.length > 0
-			? [
-				{ role: 'system', content: systemPrompt },
-				...existingMessages.slice(1),
-				{ role: 'user', content: text },
-			]
-			: [
-				{ role: 'system', content: systemPrompt },
-				{ role: 'user', content: text },
-			];
+		const historyWithoutSystem = existingMessages.length > 0 && existingMessages[0].role === 'system'
+			? existingMessages.slice(1)
+			: existingMessages;
+		const messages: Message[] = [
+			{ role: 'system', content: systemPrompt },
+			...historyWithoutSystem,
+			{ role: 'user', content: text },
+		];
 
 		const tools = data.executor.getToolDefinitions();
 

@@ -42,7 +42,7 @@ class MockWebSocket extends EventEmitter {
 
 // ── Mock LLM Provider ──────────────────────────────────────
 
-function createMockProvider(rounds: LLMEvent[][]): LLMProvider {
+function createMockProvider(rounds: LLMEvent[][], onStream?: (messages: Message[]) => void): LLMProvider {
 	let roundIndex = 0;
 
 	return {
@@ -57,6 +57,7 @@ function createMockProvider(rounds: LLMEvent[][]): LLMProvider {
 			_tools: ToolDefinition[],
 			_config?: ProviderConfig,
 		): AsyncIterable<LLMEvent> {
+			if (onStream) onStream(_messages);
 			const events = rounds[roundIndex] ?? [];
 			roundIndex++;
 
@@ -334,6 +335,80 @@ describe('WSConnectionHandler', () => {
 
 			// Clean up: resolve the pending stream to avoid dangling promises
 			if (resolveStream) resolveStream();
+		});
+	});
+
+	// ── Defensive slice(1) guard ────────────────────────────
+
+	describe('defensive history guard', () => {
+		it('does not drop first message when history has no leading system message', async () => {
+			let capturedMessages: Message[] = [];
+			const provider = createMockProvider([
+				[
+					{ type: 'text', content: 'ok' },
+					{ type: 'done', usage: { inputTokens: 1, outputTokens: 1 } },
+				],
+			], (msgs) => { capturedMessages = [...msgs]; });
+
+			const { id } = sessionManager.createSession();
+
+			// Seed messages WITHOUT a leading system message
+			sessionManager.updateMessages(id, [
+				{ role: 'user', content: 'first user message' },
+				{ role: 'assistant', content: 'first response' },
+			]);
+
+			new WSConnectionHandler(ws as any, sessionManager, provider);
+
+			ws.receiveMessage({ type: 'join', sessionId: id });
+			await flush();
+			ws.sent = [];
+
+			ws.receiveMessage({ type: 'prompt', text: 'second question' });
+			await flush();
+
+			// First message must be system (freshly built)
+			expect(capturedMessages[0].role).toBe('system');
+			// The seeded user message must NOT be dropped
+			expect(capturedMessages[1]).toEqual({ role: 'user', content: 'first user message' });
+			expect(capturedMessages[2]).toEqual({ role: 'assistant', content: 'first response' });
+			expect(capturedMessages[capturedMessages.length - 1]).toEqual({ role: 'user', content: 'second question' });
+		});
+
+		it('correctly strips leading system message from history', async () => {
+			let capturedMessages: Message[] = [];
+			const provider = createMockProvider([
+				[
+					{ type: 'text', content: 'ok' },
+					{ type: 'done', usage: { inputTokens: 1, outputTokens: 1 } },
+				],
+			], (msgs) => { capturedMessages = [...msgs]; });
+
+			const { id } = sessionManager.createSession();
+
+			// Seed messages WITH a leading system message
+			sessionManager.updateMessages(id, [
+				{ role: 'system', content: 'old system prompt' },
+				{ role: 'user', content: 'first user message' },
+				{ role: 'assistant', content: 'first response' },
+			]);
+
+			new WSConnectionHandler(ws as any, sessionManager, provider);
+
+			ws.receiveMessage({ type: 'join', sessionId: id });
+			await flush();
+			ws.sent = [];
+
+			ws.receiveMessage({ type: 'prompt', text: 'second question' });
+			await flush();
+
+			// Old system prompt should be replaced
+			expect(capturedMessages[0].role).toBe('system');
+			expect(capturedMessages[0].content).not.toBe('old system prompt');
+			expect(capturedMessages[1]).toEqual({ role: 'user', content: 'first user message' });
+			expect(capturedMessages[2]).toEqual({ role: 'assistant', content: 'first response' });
+			const systemMessages = capturedMessages.filter((m) => m.role === 'system');
+			expect(systemMessages).toHaveLength(1);
 		});
 	});
 
