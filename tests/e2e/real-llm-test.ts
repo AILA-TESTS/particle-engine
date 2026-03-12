@@ -9,26 +9,29 @@
 // GeminiProvider requires Vertex AI (service account auth).
 // =============================================================================
 
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ---------------------------------------------------------------------------
-// 1. Load credentials from .env.sample
+// 1. Load credentials from environment variables
 // ---------------------------------------------------------------------------
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "../..");
-const envPath = resolve(projectRoot, ".env.sample");
-const envContent = readFileSync(envPath, "utf-8");
 
-function getEnvVar(name: string): string {
-  const match = envContent.match(new RegExp(`^${name}=(.+)$`, "m"));
-  if (!match) throw new Error(`Missing ${name} in .env.sample`);
-  return match[1].trim();
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+
+if (!GOOGLE_API_KEY) {
+  console.log("=".repeat(70));
+  console.log("  PARTICLE ENGINE — E2E Test with Real Gemini LLM");
+  console.log("=".repeat(70));
+  console.log("  SKIP: GOOGLE_API_KEY environment variable is not set.");
+  console.log("  Set it before running: export GOOGLE_API_KEY=<your-key>");
+  console.log("=".repeat(70));
+  process.exit(0);
 }
 
-const GOOGLE_API_KEY = getEnvVar("GOOGLE_API_KEY");
 const MODEL = "gemini-2.0-flash";
 const API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}`;
 
@@ -36,7 +39,6 @@ console.log("=".repeat(70));
 console.log("  PARTICLE ENGINE — E2E Test with Real Gemini LLM");
 console.log("=".repeat(70));
 console.log(`  Model:    ${MODEL}`);
-console.log(`  API Key:  ${GOOGLE_API_KEY.slice(0, 10)}...`);
 console.log("=".repeat(70));
 console.log();
 
