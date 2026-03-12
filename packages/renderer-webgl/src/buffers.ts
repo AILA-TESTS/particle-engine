@@ -140,11 +140,18 @@ export function deleteConnectionBuffers(gl: WebGLContextLike, buffers: Connectio
  * Parse a hex color string to normalized [r, g, b] values.
  */
 export function parseHexToRGB(hex: string): [number, number, number] {
-	const clean = hex.startsWith('#') ? hex.slice(1) : hex;
+	let clean = hex.startsWith('#') ? hex.slice(1) : hex;
+	if (clean.length === 3) {
+		clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+	}
 	const r = parseInt(clean.substring(0, 2), 16) / 255;
 	const g = parseInt(clean.substring(2, 4), 16) / 255;
 	const b = parseInt(clean.substring(4, 6), 16) / 255;
-	return [r, g, b];
+	return [
+		Number.isNaN(r) ? 0 : r,
+		Number.isNaN(g) ? 0 : g,
+		Number.isNaN(b) ? 0 : b,
+	];
 }
 
 /**

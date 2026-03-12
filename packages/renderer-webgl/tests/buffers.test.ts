@@ -239,6 +239,42 @@ describe('Buffers', () => {
 			expect(g).toBeCloseTo(128 / 255);
 			expect(b).toBeCloseTo(128 / 255);
 		});
+
+		it('parses standard 6-digit hex (#FF0000) → [1, 0, 0]', () => {
+			const [r, g, b] = parseHexToRGB('#FF0000');
+			expect(r).toBeCloseTo(1.0);
+			expect(g).toBeCloseTo(0.0);
+			expect(b).toBeCloseTo(0.0);
+		});
+
+		it('expands shorthand 3-digit hex (#FFF) → [1, 1, 1]', () => {
+			const [r, g, b] = parseHexToRGB('#FFF');
+			expect(r).toBeCloseTo(1.0);
+			expect(g).toBeCloseTo(1.0);
+			expect(b).toBeCloseTo(1.0);
+		});
+
+		it('expands shorthand 3-digit hex with mixed chars (#abc)', () => {
+			const [r, g, b] = parseHexToRGB('#abc');
+			// #abc → #aabbcc
+			expect(r).toBeCloseTo(0xaa / 255);
+			expect(g).toBeCloseTo(0xbb / 255);
+			expect(b).toBeCloseTo(0xcc / 255);
+		});
+
+		it('parses 6-digit hex without hash prefix (FF0000) → [1, 0, 0]', () => {
+			const [r, g, b] = parseHexToRGB('FF0000');
+			expect(r).toBeCloseTo(1.0);
+			expect(g).toBeCloseTo(0.0);
+			expect(b).toBeCloseTo(0.0);
+		});
+
+		it('returns [0, 0, 0] for invalid/malformed hex (#XYZ) instead of NaN', () => {
+			const [r, g, b] = parseHexToRGB('#XYZ');
+			expect(r).toBe(0);
+			expect(g).toBe(0);
+			expect(b).toBe(0);
+		});
 	});
 
 	describe('createOrthographicMatrix', () => {
