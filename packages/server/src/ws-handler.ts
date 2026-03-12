@@ -188,7 +188,6 @@ export class WSConnectionHandler {
 			);
 
 			this.sessionManager.updateMessages(this.sessionId!, result.messages);
-			this.sessionManager.persistSession(this.sessionId!).catch(() => {});
 
 			this.send({ type: 'done' });
 		} finally {
