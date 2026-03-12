@@ -152,6 +152,7 @@ function gridToPixel(
 export class WebGLRenderer {
 	private state: WebGLRenderState | null = null;
 	private gl: WebGLContextLike | null = null;
+	private instancingWarned = false;
 
 	/**
 	 * Initialize GPU resources. Must be called before render().
@@ -466,9 +467,16 @@ export class WebGLRenderer {
 		} else if (state.instancedExt) {
 			state.instancedExt.drawArraysInstancedANGLE(mode, first, count, instanceCount);
 		} else {
-			// Fallback: draw each instance individually (slow but functional)
-			for (let i = 0; i < instanceCount; i++) {
-				gl.drawArrays(mode, first, count);
+			// No instancing support — attribute divisors were never set, so all
+			// per-instance attributes (position, color, size) advance per vertex
+			// instead of per instance, producing completely corrupt output.
+			// Skip the draw call and warn instead of rendering garbage.
+			if (!this.instancingWarned) {
+				console.warn(
+					'WebGLRenderer: instanced rendering unavailable (no WebGL 2 or ANGLE_instanced_arrays). ' +
+					'Particle rendering disabled.',
+				);
+				this.instancingWarned = true;
 			}
 		}
 	}

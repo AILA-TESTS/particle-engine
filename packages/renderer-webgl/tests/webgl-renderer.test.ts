@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MockWebGLContext, createMockInstancedExtension } from './mock-webgl.js';
 import { WebGLRenderer, resolveConfig, compileShader, linkProgram, createShaderProgram } from '../src/webgl-renderer.js';
 import type { SpaceState, SerializedParticle, SerializedConnection } from '@particle-engine/core';
@@ -380,6 +380,50 @@ describe('WebGLRenderer', () => {
 
 			expect(ext.calls.some(c => c.method === 'drawArraysInstancedANGLE')).toBe(true);
 			expect(ext.calls.some(c => c.method === 'vertexAttribDivisorANGLE')).toBe(true);
+		});
+
+		it('skips particle draw and warns when no instancing support', () => {
+			const gl1 = new MockWebGLContext({ webgl2: false });
+			// No ANGLE_instanced_arrays extension set
+
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			const r = new WebGLRenderer();
+			const state = makeState({
+				particles: [makeParticle()],
+				summary: { active_count: 1, connection_count: 0, groups: [] },
+			});
+			r.render(gl1, state, defaultConfig);
+
+			// Should NOT issue any draw call for particles (no drawArraysInstanced, no drawArrays for TRIANGLES)
+			expect(gl1.wasCalled('drawArraysInstanced')).toBe(false);
+			const triangleDraws = gl1.getCalls('drawArrays').filter(c => c.args[0] === gl1.TRIANGLES);
+			expect(triangleDraws.length).toBe(0);
+
+			// Should warn
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining('instanced rendering unavailable'),
+			);
+
+			warnSpy.mockRestore();
+		});
+
+		it('only warns once across multiple renders without instancing', () => {
+			const gl1 = new MockWebGLContext({ webgl2: false });
+
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			const r = new WebGLRenderer();
+			const state = makeState({
+				particles: [makeParticle()],
+				summary: { active_count: 1, connection_count: 0, groups: [] },
+			});
+
+			r.render(gl1, state, defaultConfig);
+			r.render(gl1, state, defaultConfig);
+			r.render(gl1, state, defaultConfig);
+
+			expect(warnSpy).toHaveBeenCalledTimes(1);
+
+			warnSpy.mockRestore();
 		});
 	});
 
