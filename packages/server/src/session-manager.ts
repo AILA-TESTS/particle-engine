@@ -284,8 +284,8 @@ export class SessionManager {
 						layer: p.layer,
 						group: p.group || undefined,
 					});
-				} catch {
-					// Skip invalid particles
+				} catch (err) {
+					console.warn(`[SessionManager] Skipping invalid particle at (${p.r},${p.c}): ${(err as Error).message}`);
 				}
 			}
 		}
@@ -305,8 +305,8 @@ export class SessionManager {
 						layer: c.layer,
 						label: c.label || undefined,
 					});
-				} catch {
-					// Skip invalid connections
+				} catch (err) {
+					console.warn(`[SessionManager] Skipping invalid connection (${c.from}) -> (${c.to}): ${(err as Error).message}`);
 				}
 			}
 		}

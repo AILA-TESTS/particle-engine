@@ -2,7 +2,7 @@
 // Tests — Session Persistence (file-based JSON)
 // ============================================================
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SessionManager } from '../src/session-manager.js';
 import type { PersistedSessionData } from '../src/types.js';
 import * as fs from 'node:fs/promises';
@@ -564,6 +564,158 @@ describe('Session Persistence', () => {
 			// Verify contents
 			const persisted = await readSessionFile(tempDir, id);
 			expect(persisted.session.config).toEqual({ rows: 15, cols: 15, spacing: 8 });
+		});
+	});
+
+	// ── Restore logging ───────────────────────────────────
+
+	describe('restore logging for invalid data', () => {
+		it('warns when restoring an out-of-bounds particle', async () => {
+			// Write a session file with a particle outside grid bounds
+			const sessionData: PersistedSessionData = {
+				session: {
+					id: 's_bad_particle',
+					createdAt: Date.now(),
+					config: { rows: 10, cols: 10, spacing: 10 },
+				},
+				gridState: {
+					grid: { rows: 10, cols: 10, spacing: 10 },
+					summary: { active_count: 1, connection_count: 0, groups: [] },
+					particles: [
+						{ r: 999, c: 999, color: '#FF0000', opacity: 1, size: 1, layer: 0 },
+					],
+					connections: [],
+				},
+				messages: [],
+			};
+			await fs.writeFile(
+				path.join(tempDir, 's_bad_particle.json'),
+				JSON.stringify(sessionData),
+				'utf-8',
+			);
+
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+			const manager = new SessionManager({
+				persistence: { enabled: true, directory: tempDir },
+			});
+			await manager.initialize();
+
+			// Session should still load (particle skipped)
+			const sessions = manager.listSessions();
+			expect(sessions).toHaveLength(1);
+
+			// Verify the warning was emitted
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining('[SessionManager] Skipping invalid particle at (999,999)'),
+			);
+
+			// Grid should have 0 particles (the invalid one was skipped)
+			const data = manager.getSession('s_bad_particle')!;
+			const info = data.executor.getGrid().getSpaceInfo();
+			expect(info.activeCount).toBe(0);
+
+			warnSpy.mockRestore();
+		});
+
+		it('warns when restoring an invalid connection', async () => {
+			// Write a session file with a connection using out-of-bounds coordinates
+			const sessionData: PersistedSessionData = {
+				session: {
+					id: 's_bad_conn',
+					createdAt: Date.now(),
+					config: { rows: 10, cols: 10, spacing: 10 },
+				},
+				gridState: {
+					grid: { rows: 10, cols: 10, spacing: 10 },
+					summary: { active_count: 0, connection_count: 1, groups: [] },
+					particles: [],
+					connections: [
+						{ from: [0, 0], to: [999, 999], color: '#00FF00', width: 1, opacity: 1, style: 'solid', layer: 0 },
+					],
+				},
+				messages: [],
+			};
+			await fs.writeFile(
+				path.join(tempDir, 's_bad_conn.json'),
+				JSON.stringify(sessionData),
+				'utf-8',
+			);
+
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+			const manager = new SessionManager({
+				persistence: { enabled: true, directory: tempDir },
+			});
+			await manager.initialize();
+
+			// Session should still load (connection skipped)
+			const sessions = manager.listSessions();
+			expect(sessions).toHaveLength(1);
+
+			// Verify the warning was emitted
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining('[SessionManager] Skipping invalid connection'),
+			);
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining('999,999'),
+			);
+
+			// Grid should have 0 connections
+			const data = manager.getSession('s_bad_conn')!;
+			const info = data.executor.getGrid().getSpaceInfo();
+			expect(info.connectionCount).toBe(0);
+
+			warnSpy.mockRestore();
+		});
+
+		it('logs each skipped particle individually', async () => {
+			// Write a session file with multiple invalid particles
+			const sessionData: PersistedSessionData = {
+				session: {
+					id: 's_multi_bad',
+					createdAt: Date.now(),
+					config: { rows: 5, cols: 5, spacing: 10 },
+				},
+				gridState: {
+					grid: { rows: 5, cols: 5, spacing: 10 },
+					summary: { active_count: 3, connection_count: 0, groups: [] },
+					particles: [
+						{ r: 0, c: 0, color: '#FF0000', opacity: 1, size: 1, layer: 0 },   // valid
+						{ r: 100, c: 0, color: '#00FF00', opacity: 1, size: 1, layer: 0 },  // invalid
+						{ r: 0, c: 200, color: '#0000FF', opacity: 1, size: 1, layer: 0 },  // invalid
+					],
+					connections: [],
+				},
+				messages: [],
+			};
+			await fs.writeFile(
+				path.join(tempDir, 's_multi_bad.json'),
+				JSON.stringify(sessionData),
+				'utf-8',
+			);
+
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+			const manager = new SessionManager({
+				persistence: { enabled: true, directory: tempDir },
+			});
+			await manager.initialize();
+
+			// Should have logged 2 warnings (one per invalid particle)
+			const particleWarnings = warnSpy.mock.calls.filter(
+				(call) => typeof call[0] === 'string' && call[0].includes('Skipping invalid particle'),
+			);
+			expect(particleWarnings).toHaveLength(2);
+			expect(particleWarnings[0][0]).toContain('(100,0)');
+			expect(particleWarnings[1][0]).toContain('(0,200)');
+
+			// Only the valid particle should be in the grid
+			const data = manager.getSession('s_multi_bad')!;
+			const info = data.executor.getGrid().getSpaceInfo();
+			expect(info.activeCount).toBe(1);
+
+			warnSpy.mockRestore();
 		});
 	});
 
