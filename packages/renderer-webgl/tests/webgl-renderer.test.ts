@@ -442,6 +442,110 @@ describe('WebGLRenderer', () => {
 		});
 	});
 
+	describe('render with mismatched GL context', () => {
+		it('throws when render() is called with a different GL context than init()', () => {
+			const gl1 = new MockWebGLContext({ webgl2: true });
+			const gl2 = new MockWebGLContext({ webgl2: true });
+
+			renderer.init(gl1);
+
+			expect(() => renderer.render(gl2, makeState(), defaultConfig))
+				.toThrow('WebGLRenderer: render() called with a different WebGL context than init(). Call dispose() first.');
+		});
+
+		it('does not throw when render() uses the same context as init()', () => {
+			renderer.init(gl);
+
+			expect(() => renderer.render(gl, makeState(), defaultConfig)).not.toThrow();
+		});
+
+		it('allows re-init with a different context after dispose()', () => {
+			const gl1 = new MockWebGLContext({ webgl2: true });
+			const gl2 = new MockWebGLContext({ webgl2: true });
+
+			renderer.init(gl1);
+			renderer.dispose();
+			// After dispose, render() should auto-init with gl2 without throwing
+			expect(() => renderer.render(gl2, makeState(), defaultConfig)).not.toThrow();
+		});
+	});
+
+	describe('render connections batched by line width', () => {
+		it('issues one draw call per unique line width', () => {
+			const state = makeState({
+				connections: [
+					makeConnection({ id: 'c1', width: 1 }),
+					makeConnection({ id: 'c2', width: 2 }),
+					makeConnection({ id: 'c3', width: 3 }),
+				],
+				summary: { active_count: 0, connection_count: 3, groups: [] },
+			});
+			renderer.render(gl, state, defaultConfig);
+
+			// Three unique widths → three draw calls
+			const drawCalls = gl.getCalls('drawArrays');
+			expect(drawCalls.length).toBe(3);
+		});
+
+		it('groups connections with the same width into a single draw call', () => {
+			const state = makeState({
+				connections: [
+					makeConnection({ id: 'c1', from: [0, 0], to: [1, 1], width: 2 }),
+					makeConnection({ id: 'c2', from: [2, 2], to: [3, 3], width: 2 }),
+					makeConnection({ id: 'c3', from: [0, 1], to: [1, 2], width: 2 }),
+				],
+				summary: { active_count: 0, connection_count: 3, groups: [] },
+			});
+			renderer.render(gl, state, defaultConfig);
+
+			// All same width → one draw call with 3 connections (6 vertices)
+			const drawCalls = gl.getCalls('drawArrays');
+			expect(drawCalls.length).toBe(1);
+			expect(drawCalls[0].args[2]).toBe(6);
+		});
+
+		it('calls lineWidth() once per unique width batch', () => {
+			const state = makeState({
+				connections: [
+					makeConnection({ id: 'c1', width: 1 }),
+					makeConnection({ id: 'c2', width: 1 }),
+					makeConnection({ id: 'c3', width: 3 }),
+				],
+				summary: { active_count: 0, connection_count: 3, groups: [] },
+			});
+			renderer.render(gl, state, defaultConfig);
+
+			// Two unique widths → lineWidth called twice
+			const lineWidthCalls = gl.getCalls('lineWidth');
+			expect(lineWidthCalls.length).toBe(2);
+
+			const widthValues = lineWidthCalls.map(c => c.args[0]);
+			expect(widthValues).toContain(1);
+			expect(widthValues).toContain(3);
+		});
+
+		it('each batch draw call has the correct vertex count', () => {
+			const state = makeState({
+				connections: [
+					// width=1: 3 connections → 6 vertices
+					makeConnection({ id: 'c1', from: [0, 0], to: [1, 1], width: 1 }),
+					makeConnection({ id: 'c2', from: [0, 1], to: [1, 2], width: 1 }),
+					makeConnection({ id: 'c3', from: [0, 2], to: [1, 3], width: 1 }),
+					// width=4: 1 connection → 2 vertices
+					makeConnection({ id: 'c4', from: [2, 0], to: [3, 1], width: 4 }),
+				],
+				summary: { active_count: 0, connection_count: 4, groups: [] },
+			});
+			renderer.render(gl, state, defaultConfig);
+
+			const drawCalls = gl.getCalls('drawArrays');
+			expect(drawCalls.length).toBe(2);
+
+			const vertexCounts = drawCalls.map(c => c.args[2]).sort((a, b) => (a as number) - (b as number));
+			expect(vertexCounts).toEqual([2, 6]); // 1*2 and 3*2
+		});
+	});
+
 	describe('layer sorting', () => {
 		it('sorts particles by layer', () => {
 			const state = makeState({

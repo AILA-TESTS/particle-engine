@@ -213,6 +213,14 @@ export class WebGLRenderer {
 			this.init(gl);
 		}
 
+		// Guard against mismatched GL contexts: shaders are compiled for a specific
+		// context and cannot be used across contexts. Call dispose() before switching.
+		if (this.state && this.gl !== gl) {
+			throw new Error(
+				'WebGLRenderer: render() called with a different WebGL context than init(). Call dispose() first.',
+			);
+		}
+
 		const state = this.state!;
 		const resolved = resolveConfig(config, spaceState.grid.spacing);
 		const effectiveWidth = resolved.width * resolved.pixelRatio;
@@ -328,7 +336,17 @@ export class WebGLRenderer {
 	}
 
 	/**
-	 * Render all connections using GL_LINES.
+	 * Render all connections using GL_LINES, batched by line width.
+	 *
+	 * Connections are grouped by their width value and each group gets its own
+	 * draw call preceded by gl.lineWidth(). This ensures every connection is
+	 * rendered at its intended width rather than all connections sharing the
+	 * first connection's width.
+	 *
+	 * Note: gl.lineWidth() is unreliable across browsers — many implementations
+	 * silently clamp the value to 1.0 (per the WebGL spec, only width=1 is
+	 * guaranteed). The batching is still correct; the browser may just ignore
+	 * widths other than 1.
 	 */
 	private renderConnections(
 		gl: WebGLContextLike,
@@ -338,68 +356,82 @@ export class WebGLRenderer {
 		config: ResolvedWebGLRenderConfig,
 		projectionMatrix: Float32Array,
 	): void {
-		const count = connections.length;
-
-		// Build typed arrays: 2 vertices per line segment
-		const positions = new Float32Array(count * 4); // 2 verts * 2 components
-		const colors = new Float32Array(count * 8);    // 2 verts * 4 components
-
-		for (let i = 0; i < count; i++) {
-			const conn = connections[i];
-			const from = gridToPixel(conn.from[0], conn.from[1], spacing, config.padding);
-			const to = gridToPixel(conn.to[0], conn.to[1], spacing, config.padding);
-
-			// Vertex 1 (from)
-			positions[i * 4] = from.x;
-			positions[i * 4 + 1] = from.y;
-			// Vertex 2 (to)
-			positions[i * 4 + 2] = to.x;
-			positions[i * 4 + 3] = to.y;
-
-			const [r, g, b] = parseHexToRGB(conn.color);
-			// Color for vertex 1
-			colors[i * 8] = r;
-			colors[i * 8 + 1] = g;
-			colors[i * 8 + 2] = b;
-			colors[i * 8 + 3] = conn.opacity;
-			// Color for vertex 2 (same)
-			colors[i * 8 + 4] = r;
-			colors[i * 8 + 5] = g;
-			colors[i * 8 + 6] = b;
-			colors[i * 8 + 7] = conn.opacity;
-		}
-
-		// Upload data
-		updateConnectionBuffers(gl, state.connectionBuffers, positions, colors);
-
 		// Use connection shader program
 		const prog = state.connectionProgram;
 		gl.useProgram(prog.program);
 
-		// Set uniforms
+		// Set uniforms (shared across all batches)
 		gl.uniformMatrix4fv(prog.uniforms['u_projection'], false, projectionMatrix);
 
-		// Bind position buffer
-		gl.bindBuffer(gl.ARRAY_BUFFER, state.connectionBuffers.positions);
-		gl.enableVertexAttribArray(prog.attributes['a_position']);
-		gl.vertexAttribPointer(prog.attributes['a_position'], 2, gl.FLOAT, false, 0, 0);
-
-		// Bind color buffer
-		gl.bindBuffer(gl.ARRAY_BUFFER, state.connectionBuffers.colors);
-		gl.enableVertexAttribArray(prog.attributes['a_color']);
-		gl.vertexAttribPointer(prog.attributes['a_color'], 4, gl.FLOAT, false, 0, 0);
-
-		// Set line width (WebGL may not support widths > 1, but we set it anyway)
-		if (connections.length > 0) {
-			gl.lineWidth(connections[0].width);
+		// Group connections by width to issue a separate draw call per unique width.
+		// Using a Map preserves insertion order so layer-sorted order is maintained
+		// within each batch.
+		const batches = new Map<number, SerializedConnection[]>();
+		for (const conn of connections) {
+			const existing = batches.get(conn.width);
+			if (existing) {
+				existing.push(conn);
+			} else {
+				batches.set(conn.width, [conn]);
+			}
 		}
 
-		// Draw all lines in one call
-		gl.drawArrays(gl.LINES, 0, count * 2);
+		for (const [width, batch] of batches) {
+			const count = batch.length;
 
-		// Clean up
-		gl.disableVertexAttribArray(prog.attributes['a_position']);
-		gl.disableVertexAttribArray(prog.attributes['a_color']);
+			// Build typed arrays: 2 vertices per line segment
+			const positions = new Float32Array(count * 4); // 2 verts * 2 components
+			const colors = new Float32Array(count * 8);    // 2 verts * 4 components
+
+			for (let i = 0; i < count; i++) {
+				const conn = batch[i];
+				const from = gridToPixel(conn.from[0], conn.from[1], spacing, config.padding);
+				const to = gridToPixel(conn.to[0], conn.to[1], spacing, config.padding);
+
+				// Vertex 1 (from)
+				positions[i * 4] = from.x;
+				positions[i * 4 + 1] = from.y;
+				// Vertex 2 (to)
+				positions[i * 4 + 2] = to.x;
+				positions[i * 4 + 3] = to.y;
+
+				const [r, g, b] = parseHexToRGB(conn.color);
+				// Color for vertex 1
+				colors[i * 8] = r;
+				colors[i * 8 + 1] = g;
+				colors[i * 8 + 2] = b;
+				colors[i * 8 + 3] = conn.opacity;
+				// Color for vertex 2 (same)
+				colors[i * 8 + 4] = r;
+				colors[i * 8 + 5] = g;
+				colors[i * 8 + 6] = b;
+				colors[i * 8 + 7] = conn.opacity;
+			}
+
+			// Upload data for this batch
+			updateConnectionBuffers(gl, state.connectionBuffers, positions, colors);
+
+			// Bind position buffer
+			gl.bindBuffer(gl.ARRAY_BUFFER, state.connectionBuffers.positions);
+			gl.enableVertexAttribArray(prog.attributes['a_position']);
+			gl.vertexAttribPointer(prog.attributes['a_position'], 2, gl.FLOAT, false, 0, 0);
+
+			// Bind color buffer
+			gl.bindBuffer(gl.ARRAY_BUFFER, state.connectionBuffers.colors);
+			gl.enableVertexAttribArray(prog.attributes['a_color']);
+			gl.vertexAttribPointer(prog.attributes['a_color'], 4, gl.FLOAT, false, 0, 0);
+
+			// Set line width for this batch.
+			// Many browsers clamp this to 1.0, but we set it for correctness.
+			gl.lineWidth(width);
+
+			// Draw all lines in this batch
+			gl.drawArrays(gl.LINES, 0, count * 2);
+
+			// Clean up attribute state for this batch
+			gl.disableVertexAttribArray(prog.attributes['a_position']);
+			gl.disableVertexAttribArray(prog.attributes['a_color']);
+		}
 	}
 
 	/**
