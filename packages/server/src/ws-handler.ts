@@ -122,10 +122,17 @@ export class WSConnectionHandler {
 		const spaceInfo = data.executor.getGrid().getSpaceInfo();
 		const systemPrompt = buildSystemPrompt(spaceInfo);
 
-		const messages: Message[] = [
-			{ role: 'system', content: systemPrompt },
-			{ role: 'user', content: text },
-		];
+		const existingMessages = this.sessionManager.getMessages(this.sessionId!);
+		const messages: Message[] = existingMessages.length > 0
+			? [
+				{ role: 'system', content: systemPrompt },
+				...existingMessages.slice(1),
+				{ role: 'user', content: text },
+			]
+			: [
+				{ role: 'system', content: systemPrompt },
+				{ role: 'user', content: text },
+			];
 
 		const tools = data.executor.getToolDefinitions();
 
@@ -173,7 +180,7 @@ export class WSConnectionHandler {
 		};
 
 		try {
-			await runConversation(
+			const result = await runConversation(
 				this.provider!,
 				data.executor,
 				messages,
@@ -181,6 +188,9 @@ export class WSConnectionHandler {
 				this.providerConfig,
 				onEvent,
 			);
+
+			this.sessionManager.updateMessages(this.sessionId!, result.messages);
+			this.sessionManager.persistSession(this.sessionId!).catch(() => {});
 
 			this.send({ type: 'done' });
 		} finally {
