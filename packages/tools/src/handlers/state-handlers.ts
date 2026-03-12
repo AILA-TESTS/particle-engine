@@ -1,5 +1,4 @@
-import type { ParticleGrid } from "../grid/particle-grid.js";
-import type { StateSnapshot } from "../grid/types.js";
+import type { ParticleGrid, StateSnapshot } from "@particle-engine/core";
 import type { ToolResult } from "../types.js";
 
 export function handleSnapshot(
@@ -15,9 +14,15 @@ export function handleSnapshot(
 	const snap = grid.snapshot();
 	snapshots.set(name, snap);
 
+	// Count active particles from the snapshot's typed array
+	let particleCount = 0;
+	for (let i = 0; i < snap.particles.active.length; i++) {
+		if (snap.particles.active[i] === 1) particleCount++;
+	}
+
 	return {
 		success: true,
-		data: { name, particleCount: snap.particles.size, connectionCount: snap.connections.size },
+		data: { name, particleCount, connectionCount: snap.edges.size },
 	};
 }
 

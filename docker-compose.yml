@@ -1,0 +1,47 @@
+# ============================================================
+# particle-engine — Docker Compose (development / standalone)
+# ============================================================
+#
+# Usage:
+#   1. Create a .env file with your API keys (see .env.example below)
+#   2. docker compose up -d
+#   3. Open http://localhost:3000/api/sessions to verify
+#   4. docker compose logs -f   (view logs)
+#   5. docker compose down       (stop)
+#   6. docker compose down -v    (stop + remove session data)
+#
+# .env file format:
+#   GOOGLE_API_KEY=your-key-here
+#   ANTHROPIC_API_KEY=your-key-here
+#   OPENAI_API_KEY=your-key-here
+#
+# ============================================================
+
+services:
+  particle-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: particle-engine
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-}
+      - GCP_REGION=${GCP_REGION:-us-central1}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - sessions:/app/sessions
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/sessions"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sessions:
+    driver: local

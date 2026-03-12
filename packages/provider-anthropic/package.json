@@ -11,6 +11,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@particle-engine/tools": "workspace:*"
   },
   "devDependencies": {

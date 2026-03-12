@@ -11,6 +11,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "@google/generative-ai": "^0.24.1",
     "@particle-engine/tools": "workspace:*"
   },
   "devDependencies": {

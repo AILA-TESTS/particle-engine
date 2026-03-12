@@ -1,4 +1,4 @@
-import type { ParticleGrid } from "../grid/particle-grid.js";
+import type { ParticleGrid } from "@particle-engine/core";
 import { connectSchema, disconnectSchema } from "../schemas/index.js";
 import type { ToolResult } from "../types.js";
 import { validateBounds, validateParams } from "../validation.js";
@@ -38,21 +38,19 @@ export function handleConnect(
 
 	// Create all
 	for (const conn of connections) {
-		const result = grid.addConnection(
-			conn.from as [number, number],
-			conn.to as [number, number],
-			{
-				color: conn.color,
-				width: conn.width,
-				opacity: conn.opacity,
-				style: conn.style,
-				curve: conn.curve,
-				directed: conn.directed,
-				group: conn.group,
-				label: conn.label,
-			},
-		);
-		created.push({ id: result.id, from: result.from, to: result.to });
+		const from = conn.from as [number, number];
+		const to = conn.to as [number, number];
+		const id = grid.connect(from, to, {
+			color: conn.color,
+			width: conn.width,
+			opacity: conn.opacity,
+			style: conn.style,
+			curve: conn.curve,
+			directed: conn.directed,
+			group: conn.group,
+			label: conn.label,
+		});
+		created.push({ id, from, to });
 	}
 
 	return {
@@ -73,7 +71,9 @@ export function handleDisconnect(
 
 	if (data.ids) {
 		for (const id of data.ids) {
-			if (grid.removeConnection(id)) {
+			const conn = grid.getConnection(id);
+			if (conn) {
+				grid.disconnect(id);
 				removed++;
 			}
 		}
@@ -81,15 +81,42 @@ export function handleDisconnect(
 
 	if (data.endpoints) {
 		for (const [from, to] of data.endpoints) {
-			removed += grid.removeConnectionsByEndpoints(
-				from as [number, number],
-				to as [number, number],
-			);
+			// Count connections matching these endpoints before removing
+			const connStore = grid.getConnectionStore();
+			const toRemove: string[] = [];
+			for (const [id, conn] of connStore.edges) {
+				if (
+					(conn.from[0] === from[0] &&
+						conn.from[1] === from[1] &&
+						conn.to[0] === to[0] &&
+						conn.to[1] === to[1]) ||
+					(conn.from[0] === to[0] &&
+						conn.from[1] === to[1] &&
+						conn.to[0] === from[0] &&
+						conn.to[1] === from[1])
+				) {
+					toRemove.push(id);
+				}
+			}
+			for (const id of toRemove) {
+				grid.disconnect(id);
+				removed++;
+			}
 		}
 	}
 
 	if (data.group) {
-		removed += grid.removeConnectionsByGroup(data.group);
+		const connStore = grid.getConnectionStore();
+		const toRemove: string[] = [];
+		for (const [id, conn] of connStore.edges) {
+			if (conn.group === data.group) {
+				toRemove.push(id);
+			}
+		}
+		for (const id of toRemove) {
+			grid.disconnect(id);
+			removed++;
+		}
 	}
 
 	return {

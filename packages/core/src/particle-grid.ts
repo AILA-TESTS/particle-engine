@@ -50,6 +50,13 @@ export class ParticleGrid {
     this.groupManager = new GroupManager();
   }
 
+  // ── Config access ─────────────────────────────────────────
+
+  /** Get a copy of the grid configuration. */
+  getConfig(): GridConfig {
+    return { ...this.config };
+  }
+
   // ── Index helpers ──────────────────────────────────────────
 
   /** Convert (row, col) to flat array index. */

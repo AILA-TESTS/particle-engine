@@ -28,7 +28,7 @@ describe("Connection Tools", () => {
 				connections: Array<{ id: string }>;
 			};
 			expect(data.created).toBe(1);
-			expect(data.connections[0].id).toMatch(/^conn_/);
+			expect(data.connections[0].id).toMatch(/^c_/);
 		});
 
 		it("should create connections with custom properties", () => {

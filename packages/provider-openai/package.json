@@ -11,7 +11,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@particle-engine/tools": "workspace:*"
+    "@particle-engine/tools": "workspace:*",
+    "openai": "^6.27.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

@@ -57,12 +57,113 @@
   - Tools: 13 tools with zod validation, undo stack, named snapshots, animation storage
   - Monorepo: pnpm workspaces + turborepo, 12 packages scaffolded
 
-## Next Steps
-- Integrate tools with real core package (replace internal grid stub)
-- Phase 2: Rendering (renderer-svg, renderer-canvas)
+### Session 2 — 2026-03-11 — Phase 2 (Tools Integration + Renderers)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (3 parallel Opus agents):**
+  1. Tools ↔ Core integration (Opus) — Deleted grid stub, rewired all handlers to use `@particle-engine/core`, added `getConfig()` to core, updated connection ID patterns — 62 tests passing
+  2. renderer-svg (Opus) — Full SVG renderer: circle/square particles, solid/dashed/dotted connections, bezier curves, directed arrows, labels, layer ordering, grid dots — 80 tests passing
+  3. renderer-canvas (Opus) — Isomorphic Canvas 2D renderer: accepts any `CanvasContext2D` (browser/Node), mock-canvas testing, same feature set as SVG — 66 tests passing
+- **Git History:**
+  - `fe5e6f6` feat(renderer-svg): implement SVG renderer with connection styles and layer support
+  - `b64dc66` refactor(tools): replace grid stub with @particle-engine/core integration
+  - `2ff71e0` feat(renderer-canvas): implement isomorphic Canvas 2D renderer with mock testing
+  - `e62434f` chore: add .turbo/ to gitignore
+- **Key Outcomes:**
+  - **506 total tests passing** across 5 packages (core: 100, animation: 198, tools: 62, renderer-svg: 80, renderer-canvas: 66)
+  - Tools grid stub fully removed — all handlers use real core ParticleGrid
+  - SVG renderer: zero dependencies, pure string output, self-contained SVG documents
+  - Canvas renderer: isomorphic via injected CanvasContext2D/CanvasFactory — no canvas dependency
+  - Both renderers share compatible interfaces (RenderConfig, layout logic)
+
+### Session 2b — 2026-03-11 — Phase 3 (Video Generation)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed:**
+  1. packages/video (Opus) — VideoGenerator with FFmpeg pipeline, FrameState→SpaceState converter, FFmpeg arg builder, mock-based testing — 63 tests passing
+- **Git History:**
+  - `808b0b2` feat(video): implement video generation with FFmpeg pipeline and frame conversion
+- **Key Outcomes:**
+  - **569 total tests passing** across 6 packages
+  - Full pipeline: Animation → AnimationEngine → FrameState → SpaceState → CanvasRenderer → RGBA buffer → FFmpeg stdin → video file
+  - Supports MP4 (H.264), WebM (VP9), GIF formats
+  - Quality-to-CRF mapping, HiDPI support, configurable FFmpeg path
+  - Frame converter bridges FrameState (animation output) to SpaceState (renderer input)
+  - No external dependencies beyond Node.js child_process
+
+### Session 2c — 2026-03-11 — Phase 4 (LLM Provider + Server)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (2 parallel Opus agents):**
+  1. LLMProvider types + provider-gemini (Opus) — Added shared LLMProvider interface to tools, implemented Gemini 3.1 Pro adapter with Vertex AI SDK — 34 tests passing
+  2. Server (Opus) — HTTP API with Hono, session management, conversation loop, SVG rendering — 52 tests passing
+- **Git History:**
+  - `5f81795` feat(tools): add LLMProvider interface and shared provider types
+  - `be0b898` feat(provider-gemini): implement Gemini provider with Vertex AI SDK
+  - `a79c234` feat(server): implement HTTP API with session management and conversation loop
+- **Key Outcomes:**
+  - **655 total tests passing** across 8 packages
+  - LLMProvider interface: Message, ToolCall, LLMEvent types shared across all providers
+  - GeminiProvider: Vertex AI SDK integration, tool format conversion, streaming, message format mapping
+  - Server: 7 HTTP endpoints (session CRUD, direct tool exec, LLM prompt, SVG render)
+  - Conversation loop: multi-round tool-use loop with event callbacks and usage tracking
+  - Session manager: independent grid+tools per session, in-memory storage
+
+### Session 2d — 2026-03-11 — Phase 5 (Client + Additional Providers)
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed (3 parallel Opus agents):**
+  1. Client (Opus) — Browser preview app with Vite, canvas rendering, prompt input, API client, dark UI — 20 tests passing
+  2. provider-anthropic (Opus) — Claude provider with streaming tool use, @anthropic-ai/sdk — 43 tests passing
+  3. provider-openai (Opus) — OpenAI provider with streaming function calls, openai SDK — 48 tests passing
+- **Git History:**
+  - `ff4eaa0` feat(client): implement browser preview app with canvas rendering and prompt input
+  - `aa27e58` feat(provider-anthropic): implement Claude provider with streaming tool use
+  - `0c7b62c` feat(provider-openai): implement OpenAI provider with streaming function calls
+- **Key Outcomes:**
+  - **766 total tests passing** across 11 packages
+  - Client: Vite-based vanilla TS web app, dark theme, canvas grid rendering, prompt input, tool call log, status bar
+  - All 3 LLM providers implemented: Gemini (Vertex AI), Claude (@anthropic-ai/sdk), OpenAI (openai SDK)
+  - Provider-agnostic architecture fully realized — swap providers by changing one config value
+  - 11 of 12 packages implemented (only renderer-webgl remains as scaffold)
+
+### Session 3 — 2026-03-12 — Post-Phase Polish & Documentation
+- **Status:** COMPLETE
+- **Tasks Dispatched & Completed:**
+  1. E2E test with real Gemini LLM (Opus) — full pipeline validated: prompt → Gemini → tool calls → grid state → SVG render
+  2. Provider-gemini dual auth (Opus) — added API key mode (@google/generative-ai) alongside Vertex AI, auto-detect — 64 tests
+  3. WebSocket support (Opus) — server WSConnectionHandler + client WebSocketClient with auto-reconnect and HTTP fallback — server 65 tests, client 39 tests
+  4. Session persistence (Opus) — file-based JSON with atomic writes, auto-recovery on startup — server 93 tests
+  5. renderer-webgl (Opus) — GPU instanced rendering, SDF circles, WebGL 1+2 support — 85 tests
+  6. Turbo test fix (Sonnet) — resolved DTS type mismatches, missing deps across packages — all 12 packages pass
+  7. Documentation (Sonnet) — root README + 12 package READMEs
+  8. CLI + DX polish (Sonnet) — bin/particle-engine.ts with flags, example prompts, dev scripts — 34 CLI tests
+  9. Deployment guide (Opus) — docs/deployment-guide.md, Dockerfile, docker-compose.yml, .dockerignore
+  10. Testing playground (Opus) — scripts/setup-playground.sh, docs/testing-guide.md
+  11. User guide (Sonnet) — docs/user-guide.md (958 lines)
+- **Git History:**
+  - `f3f2805` feat(provider-gemini): add API key auth mode and E2E test with real Gemini LLM
+  - `7c7f3d3` feat(server,client): add WebSocket support for real-time LLM streaming
+  - `8bae6b8` feat(server): add file-based session persistence with atomic writes
+  - `632bb6f` feat(renderer-webgl): implement GPU-accelerated WebGL renderer
+  - `0cc61cf` fix: resolve turbo test failures across all packages
+  - `3e64148` docs: add root README and per-package documentation
+  - `1bf467a` feat: add CLI entry point, dev scripts, and example prompts
+  - `cdd0339` docs: add deployment guide, Docker setup, and testing playground
+- **Key Outcomes:**
+  - **975 total tests passing** across **12/12 packages** (all implemented, no scaffolds)
+  - E2E validated with real Gemini LLM — full pipeline works
+  - Provider-gemini dual auth (API key + Vertex AI) with auto-detection
+  - WebSocket real-time streaming with HTTP fallback
+  - File-based session persistence with atomic writes and auto-recovery
+  - renderer-webgl: instanced rendering, SDF circles, 85 tests
+  - CLI entry point with --port, --provider, --model, --persist-dir flags
+  - Dockerfile + docker-compose.yml for containerized deployment
+  - Full docs: README, 12 package READMEs, deployment guide, testing guide, user guide
+
+## All Phases + Post-Phase Complete
+- Phase 1: Core engine (core, animation, tools)
+- Phase 2: Rendering (renderer-svg, renderer-canvas) + tools↔core integration
 - Phase 3: Video generation
-- Phase 4: LLM provider integration (Gemini 3.1 Pro)
-- Phase 5: Server + client
+- Phase 4: LLM provider (Gemini) + server
+- Phase 5: Client + additional providers (Anthropic, OpenAI)
+- Post-phase: E2E, WebSocket, persistence, renderer-webgl, CLI, docs, Docker
 
 ## Architecture Decisions (Finalized)
 
