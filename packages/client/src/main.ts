@@ -100,6 +100,7 @@ async function init() {
 			onDisconnected: () => {
 				useWebSocket = false;
 				ui.addLogEntry('status', 'WebSocket disconnected, falling back to HTTP');
+				ui.setLoading(false);
 			},
 		});
 

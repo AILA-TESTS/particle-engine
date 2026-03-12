@@ -192,6 +192,8 @@ export class WebSocketClient {
 	private sendMessage(msg: ClientWSMessage): void {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify(msg));
+		} else {
+			this.handlers.onError?.('Cannot send message: WebSocket is not connected');
 		}
 	}
 
